@@ -1,0 +1,10 @@
+<launch>
+  <arg name="kinect_name" default="camera"/>
+
+  <node name="background_sub_front" pkg="kinects_human_tracking" type="kinect_background_sub" output="screen">
+    <param name="min_file" value="$(find kinects_human_tracking)/data/$(arg kinect_name)/min_bg.pcd" />
+    <param name="max_file" value="$(find kinects_human_tracking)/data/$(arg kinect_name)/max_bg.pcd" />
+    <param name="topic_in" value="$(arg kinect_name)/depth_registered/points" />
+    <param name="topic_out" value="$(arg kinect_name)/background_sub" />
+  </node>
+</launch>
