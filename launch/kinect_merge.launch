@@ -1,0 +1,10 @@
+<launch>
+  <arg name="kinect_name" default="camera"/>
+
+  <node name="kinects_merge" pkg="kinects_human_tracking" type="merge_kinects_pc" output="screen">
+    <param name="first_topic_name" value="kinect_front/background_sub" />
+    <param name="second_topic_name" value="kinect_back/background_sub" />
+    <param name="out_frame" value="base_link" />
+    <param name="out_topic_name" value="kinect_both" />
+  </node>
+</launch>

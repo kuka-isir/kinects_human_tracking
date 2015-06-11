@@ -26,7 +26,6 @@
 **/
 
 /******************* TODO **********************************************/
-// Read topics from params, and set default ones
 // Convert to a n-pointclouds merge with std::vector
 
 
@@ -46,15 +45,21 @@ void get_transforms( string first_pc_frame, string second_pc_frame, pclTransform
 
 pclTransform first_transform, second_transform;
 bool first_frame;
-string front_frame, back_frame, new_frame;
+string first_topic_name, second_topic_name, out_frame, out_topic_name;
 ros::Publisher pc_pub;
 PointCloudSM::Ptr first_pcl_pc1, second_pcl_pc1, transformed_first_pc, transformed_second_pc, merged_pc;
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "merge_kinects_pc");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh, nh_priv("~");
   
   first_frame = true;
+  
+  // Get params topics and frames names
+  nh_priv.getParam("first_topic_name", first_topic_name);
+  nh_priv.getParam("second_topic_name", second_topic_name);
+  nh_priv.getParam("out_frame", out_frame);
+  nh_priv.getParam("out_topic_name", out_topic_name);
   
   // Initialize shared pointers
   first_pcl_pc1 = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
@@ -66,18 +71,13 @@ int main(int argc, char** argv){
   // Initialize PointClouds
   PointCloudSM::Ptr transformed_first_pc(new PointCloudSM), transformed_second_pc(new PointCloudSM), merged_pc(new PointCloudSM);
   
-  // Get subscribed topics names
-  string bg_back_topic = "background_sub_back/pc1_out";
-  string bg_front_topic = "background_sub_front/pc1_out";
-  new_frame = "table_link";
-  
   // Ros Subscribers and Publishers
-  pc_pub = nh.advertise<PointCloudSM>("/kinect_both/depth_registered/points", 1);
-  message_filters::Subscriber<PCMsg> front_sub(nh, bg_front_topic, 1);
-  message_filters::Subscriber<PCMsg> back_sub(nh, bg_back_topic, 1);
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(4), back_sub, front_sub);
+  pc_pub = nh.advertise<PointCloudSM>(out_topic_name, 1);
+  message_filters::Subscriber<PCMsg> first_sub(nh, first_topic_name, 1);
+  message_filters::Subscriber<PCMsg> second_sub(nh, second_topic_name, 1);
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(4), first_sub, second_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
-
+  
   ros::spin();
   return 0;
 }
@@ -104,8 +104,8 @@ void callback(const PCMsg::ConstPtr& first_msg_pc2_, const PCMsg::ConstPtr& seco
   pcl::transformPointCloud(*second_pcl_pc1, *transformed_second_pc, first_transform.translation, first_transform.rotation);
   pcl::transformPointCloud(*first_pcl_pc1, *transformed_first_pc, second_transform.translation, second_transform.rotation);
 
-  transformed_second_pc->header.frame_id = new_frame;
-  transformed_first_pc->header.frame_id = new_frame;
+  transformed_second_pc->header.frame_id = out_frame;
+  transformed_first_pc->header.frame_id = out_frame;
 
   if(COLOR_DIFF){ //change PC colors
     for(size_t i=0; i<transformed_first_pc->size(); ++i){
@@ -139,8 +139,8 @@ void get_transforms(string first_pc_frame, string second_pc_frame, pclTransform 
   while (!(found_first_t && found_second_t)){
     if(!found_first_t){
       try{
-	first_trans_listener.waitForTransform(new_frame, first_pc_frame, ros::Time(0), ros::Duration(10.0));
-	first_trans_listener.lookupTransform(new_frame, first_pc_frame, ros::Time(0), stampedTransform);
+	first_trans_listener.waitForTransform(out_frame, first_pc_frame, ros::Time(0), ros::Duration(10.0));
+	first_trans_listener.lookupTransform(out_frame, first_pc_frame, ros::Time(0), stampedTransform);
       }
       catch(tf::TransformException &ex){
 	cout << ex.what() << endl;
@@ -156,8 +156,8 @@ void get_transforms(string first_pc_frame, string second_pc_frame, pclTransform 
     
     if(!found_second_t){
       try{
-	second_trans_listener.waitForTransform(new_frame, second_pc_frame, ros::Time(0),ros::Duration(10.0));
-	second_trans_listener.lookupTransform(new_frame, second_pc_frame, ros::Time(0), stampedTransform);
+	second_trans_listener.waitForTransform(out_frame, second_pc_frame, ros::Time(0),ros::Duration(10.0));
+	second_trans_listener.lookupTransform(out_frame, second_pc_frame, ros::Time(0), stampedTransform);
       }
       catch(tf::TransformException &ex){
 	cout << ex.what() << endl;
