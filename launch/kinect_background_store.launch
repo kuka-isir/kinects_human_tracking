@@ -1,7 +1,7 @@
 <launch>
   <arg name="kinect_name" default="camera"/>
   
-  <node name="background_store_back" pkg="kinects_human_tracking" type="kinect_background_store" output="screen">
+  <node name="background_store" pkg="kinects_human_tracking" type="kinect_background_store" output="screen">
     <param name="bg_frames" value="10" />
     <param name="min_file" value="$(find kinects_human_tracking)/data/$(arg kinect_name)/min_bg.pcd" />
     <param name="max_file" value="$(find kinects_human_tracking)/data/$(arg kinect_name)/max_bg.pcd" />
