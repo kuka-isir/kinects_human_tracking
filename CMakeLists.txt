@@ -94,7 +94,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+#  INCLUDE_DIRS include
 #  LIBRARIES kinects_human_tracking
 #  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport libpcl-all-dev pcl_conversions pcl_ros roscpp rospy sensor_msgs std_msgs tf tf_conversions vision_opencv visualization_msgs
 #  DEPENDS system_lib
@@ -108,7 +108,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-  include
+#   include
   ${catkin_INCLUDE_DIRS}
 )
 
