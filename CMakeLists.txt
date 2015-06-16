@@ -121,6 +121,7 @@ include_directories(
 add_executable(kinect_background_store src/kinect_background_store.cpp)
 add_executable(kinect_background_sub src/kinect_background_sub.cpp)
 add_executable(merge_kinects_pc src/merge_kinects_pc.cpp)
+add_executable(kinect_human_detection src/kinect_human_detection.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -130,6 +131,7 @@ add_executable(merge_kinects_pc src/merge_kinects_pc.cpp)
 target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
 target_link_libraries(kinect_background_sub  ${catkin_LIBRARIES})
 target_link_libraries(merge_kinects_pc ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(kinect_human_detection ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
 #############
 ## Install ##

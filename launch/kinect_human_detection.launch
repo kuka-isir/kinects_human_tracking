@@ -1,0 +1,9 @@
+<launch>
+  <arg name="kinect_name" default="camera"/>
+
+  <node name="kinect_humand_detection" pkg="kinects_human_tracking" type="kinect_human_detection" output="screen">
+    <param name="in_topic_name" value="camera/background_sub" />
+    <param name="w_ground_topic_name" value="kinect_both/without_ground" />
+    <param name="out_topic_name" value="kinect_both/human_detection" />
+  </node>
+</launch>
