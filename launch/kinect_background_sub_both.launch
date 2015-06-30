@@ -1,0 +1,21 @@
+<launch>
+  <arg name="kinect1_name" default="kinect1"/>
+  <arg name="kinect2_name" default="kinect2"/>
+
+  <node name="background_sub_$(arg kinect1_name)" pkg="kinects_human_tracking" type="kinect_background_sub" output="screen">
+    <param name="min_file" value="$(find kinects_human_tracking)/data/$(arg kinect1_name)/min_bg.pcd" />
+    <param name="max_file" value="$(find kinects_human_tracking)/data/$(arg kinect1_name)/max_bg.pcd" />
+    <param name="topic_in" value="$(arg kinect1_name)/depth_registered/points" />
+    <param name="topic_out" value="$(arg kinect1_name)/background_sub" />
+  </node>
+
+  <node name="background_sub_$(arg kinect2_name)" pkg="kinects_human_tracking" type="kinect_background_sub" output="screen">
+    <param name="min_file" value="$(find kinects_human_tracking)/data/$(arg kinect2_name)/min_bg.pcd" />
+    <param name="max_file" value="$(find kinects_human_tracking)/data/$(arg kinect2_name)/max_bg.pcd" />
+    <param name="topic_in" value="$(arg kinect2_name)/depth_registered/points" />
+    <param name="topic_out" value="$(arg kinect2_name)/background_sub" />
+  </node>
+
+
+
+</launch>
