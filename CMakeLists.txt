@@ -1,9 +1,16 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(kinects_human_tracking)
 
+set(CMAKE_BUILD_TYPE Release)
+
 ## Find non-catkin packages
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_include_dirs})
+
+find_package(PCL 1.7 REQUIRED)
+include_directories(${PCL_INCLUDE_DIRS})
+include_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
