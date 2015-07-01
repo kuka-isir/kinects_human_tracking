@@ -47,7 +47,7 @@ pclTransform first_transform, second_transform;
 bool first_frame;
 string first_topic_name, second_topic_name, out_frame, out_topic_name;
 ros::Publisher pc_pub;
-PointCloudSM::Ptr first_pcl_pc1, second_pcl_pc1, transformed_first_pc, transformed_second_pc, merged_pc;
+PointCloudSM::Ptr first_pcl_pc1, second_pcl_pc1, merged_pc;
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "merge_kinects_pc");
@@ -64,18 +64,18 @@ int main(int argc, char** argv){
   // Initialize shared pointers
   first_pcl_pc1 = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   second_pcl_pc1 = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
-  transformed_first_pc = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
-  transformed_second_pc = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   merged_pc = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   
-  // Initialize PointClouds
-  PointCloudSM::Ptr transformed_first_pc(new PointCloudSM), transformed_second_pc(new PointCloudSM), merged_pc(new PointCloudSM);
+  // Reserve memory for pointclouds
+  first_pcl_pc1->reserve(10000);
+  second_pcl_pc1->reserve(10000);
+  merged_pc->reserve(10000);
   
   // Ros Subscribers and Publishers
   pc_pub = nh.advertise<PointCloudSM>(out_topic_name, 1);
   message_filters::Subscriber<PCMsg> first_sub(nh, first_topic_name, 1);
   message_filters::Subscriber<PCMsg> second_sub(nh, second_topic_name, 1);
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(4), first_sub, second_sub);
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(2), first_sub, second_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
   
   ros::spin();
@@ -84,12 +84,9 @@ int main(int argc, char** argv){
 
 void callback(const PCMsg::ConstPtr& first_msg_pc2_, const PCMsg::ConstPtr& second_msg_pc2 ){
   
-  // conversionns to pcl::PointCloud
-  pcl::PCLPointCloud2 first_pcl_pc2, second_pcl_pc2 ;
-  pcl_conversions::toPCL(*first_msg_pc2_, first_pcl_pc2);
-  pcl::fromPCLPointCloud2(first_pcl_pc2, *first_pcl_pc1);
-  pcl_conversions::toPCL(*second_msg_pc2, second_pcl_pc2);
-  pcl::fromPCLPointCloud2(second_pcl_pc2, *second_pcl_pc1);
+  // conversionns to pcl::PointCloud 
+  pcl::fromROSMsg(*first_msg_pc2_, *first_pcl_pc1);
+  pcl::fromROSMsg(*second_msg_pc2, *second_pcl_pc1);
 
   string first_pc_frame = first_pcl_pc1->header.frame_id;
   string second_pc_frame = second_pcl_pc1->header.frame_id;
@@ -101,27 +98,27 @@ void callback(const PCMsg::ConstPtr& first_msg_pc2_, const PCMsg::ConstPtr& seco
   }
 
   // transform points
-  pcl::transformPointCloud(*second_pcl_pc1, *transformed_second_pc, first_transform.translation, first_transform.rotation);
-  pcl::transformPointCloud(*first_pcl_pc1, *transformed_first_pc, second_transform.translation, second_transform.rotation);
+  pcl::transformPointCloud(*second_pcl_pc1, *second_pcl_pc1, first_transform.translation, first_transform.rotation);
+  pcl::transformPointCloud(*first_pcl_pc1, *first_pcl_pc1, second_transform.translation, second_transform.rotation);
 
-  transformed_second_pc->header.frame_id = out_frame;
-  transformed_first_pc->header.frame_id = out_frame;
+  second_pcl_pc1->header.frame_id = out_frame;
+  first_pcl_pc1->header.frame_id = out_frame;
 
   if(COLOR_DIFF){ //change PC colors
-    for(size_t i=0; i<transformed_first_pc->size(); ++i){
-      transformed_first_pc->at(i).r = uint8_t(0);
-      transformed_first_pc->at(i).g = uint8_t(255);	  
-      transformed_first_pc->at(i).b = uint8_t(0);
+    for(size_t i=0; i<first_pcl_pc1->size(); ++i){
+      first_pcl_pc1->at(i).r = uint8_t(0);
+      first_pcl_pc1->at(i).g = uint8_t(255);	  
+      first_pcl_pc1->at(i).b = uint8_t(0);
     }
-    for(size_t i=0; i<transformed_second_pc->size(); ++i){
-      transformed_second_pc->at(i).r = uint8_t(255);
-      transformed_second_pc->at(i).g = uint8_t(0);	  
-      transformed_second_pc->at(i).b = uint8_t(0);
+    for(size_t i=0; i<second_pcl_pc1->size(); ++i){
+      second_pcl_pc1->at(i).r = uint8_t(255);
+      second_pcl_pc1->at(i).g = uint8_t(0);	  
+      second_pcl_pc1->at(i).b = uint8_t(0);
     }
   }
 
-  *merged_pc = *transformed_first_pc;
-  *merged_pc += *transformed_second_pc;
+  *merged_pc = *first_pcl_pc1;
+  *merged_pc += *second_pcl_pc1;
   pc_pub.publish(*merged_pc);
 }
 

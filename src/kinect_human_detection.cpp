@@ -92,6 +92,11 @@ int main(int argc, char** argv){
   robot_pc = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> >(new pcl::PointCloud<pcl::PointXYZ>);
   clustered_cloud = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   
+  // Reserve memory for clouds
+  pcl_pc1->reserve(10000);
+  robot_pc->reserve(10000);
+  clustered_cloud->reserve(10000);
+  
   // Ros Subscribers and Publishers
   pc_clustered_pub = nh.advertise<PointCloudSM>(clusters_topic_name, 1);
   human_pc_pub = nh.advertise<PointCloudSM>(out_topic_name, 1);
@@ -100,7 +105,7 @@ int main(int argc, char** argv){
   
   message_filters::Subscriber<PCMsg> kinect_pc_sub(nh, kinect_topic_name, 1);
   message_filters::Subscriber<PCMsg> robot_pc_sub(nh, robot_topic_name, 1);
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(50), kinect_pc_sub, robot_pc_sub);
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(2), kinect_pc_sub, robot_pc_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
   
   ros::spin();

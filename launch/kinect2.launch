@@ -2,7 +2,7 @@
 	<arg name="calibrate" 			default="false"/>
 	<arg name="camera" 			default="kinect2" />
 	<arg name="device_serial"		default="1402240420" />
-	<arg name="device_id"	 		default="3@0" />
+	<arg name="device_id"	 		default="2@0" />
 	<arg name="base_link" 			default="world" />
 
 	<arg name="depth_registration" 		default="true" />
