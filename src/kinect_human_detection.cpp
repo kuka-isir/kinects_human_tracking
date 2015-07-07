@@ -72,7 +72,8 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
 PointCloudSM::Ptr pcl_pc1, clustered_cloud;
 pcl::PointCloud<pcl::PointXYZ>::Ptr robot_pc;
 ros::Publisher human_pc_pub, pc_clustered_pub, cloud_mini_pt_pub, dist_pt_pub;
-tf::TransformListener *tf_listener; 
+tf::TransformListener *tf_listener;
+double voxel_size_;
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "kinect_human_detection");
@@ -86,6 +87,7 @@ int main(int argc, char** argv){
   nh_priv.getParam("robot_topic_name",robot_topic_name);
   nh_priv.getParam("clusters_topic_name",clusters_topic_name);
   nh_priv.getParam("out_topic_name",out_topic_name);
+  nh_priv.getParam("voxel_size",voxel_size_);
   
   // Initialize PointClouds
   pcl_pc1 = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
@@ -131,20 +133,19 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   //*/
   
   // Downsampling of the kinects cloud
-  float voxel_size=0.01;
   int max_cluster_size = 250000;
   int min_cluster_size = 100;
   pcl::VoxelGrid<pcl::PointXYZRGB> vox_grid;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
   vox_grid.setInputCloud(pcl_pc1);
-  vox_grid.setLeafSize(voxel_size,voxel_size,voxel_size);
+  vox_grid.setLeafSize(voxel_size_,voxel_size_,voxel_size_);
   vox_grid.filter(*pc_filtered);
   
   /* Ground removal:
   const Eigen::VectorXf ground_coeffs;
   pcl::IndicesPtr inliers(new std::vector<int>);
   boost::shared_ptr<pcl::SampleConsensusModelPlane<pcl::PointXYZRGB> > ground_model(new pcl::SampleConsensusModelPlane<pcl::PointXYZRGB>(pc_filtered));
-  ground_model->selectWithinDistance(ground_coeffs, 1.5*voxel_size, *inliers);
+  ground_model->selectWithinDistance(ground_coeffs, 1.5*voxel_size_, *inliers);
   PointCloudSM::Ptr no_ground_cloud(new PointCloudSM);
   pcl::ExtractIndices<pcl::PointXYZRGB> extract;
   extract.setInputCloud(pc_filtered);
@@ -160,7 +161,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices;
   pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
-  ec.setClusterTolerance (2*voxel_size); // 2cm
+  ec.setClusterTolerance (2*voxel_size_); // 2cm
   ec.setMinClusterSize (min_cluster_size);
   //ec.setMaxClusterSize (max_cluster_size);
   ec.setSearchMethod (tree);
@@ -280,10 +281,9 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     pcl::fromROSMsg(pcl_out, *robot_pc);
    
     // Downsample the robot's cloud
-    float voxel_size = 0.06;
     pcl::VoxelGrid<pcl::PointXYZ> vox_grid;
     vox_grid.setInputCloud(robot_pc);
-    vox_grid.setLeafSize(voxel_size, voxel_size, voxel_size);
+    vox_grid.setLeafSize(voxel_size_, voxel_size_, voxel_size_);
     vox_grid.filter(*robot_pc);
     
     // Computation of minimum distance between the human and the robot
