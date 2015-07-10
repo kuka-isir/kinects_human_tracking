@@ -46,9 +46,8 @@
 #include <pcl_ros/transforms.h>
 
 
-#include <algorithm>
-#include <iostream>
-#include <vector>
+#include <kinects_human_tracking/kalmanFilter.hpp>
+
 /**
    Subscribe to a pointCloud and figure if there is 
    a human inside. Then track him using a Kalman filter
@@ -84,10 +83,12 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
 // Global variables
 PointCloudSM::Ptr pcl_pc1, clustered_cloud;
 pcl::PointCloud<pcl::PointXYZ>::Ptr robot_pc;
-ros::Publisher human_pc_pub, pc_clustered_pub, cloud_mini_pt_pub, dist_pt_pub;
+ros::Publisher human_pc_pub, pc_clustered_pub, cloud_mini_pt_pub, dist_pt_pub, human_pose_pub, human_pose_obs_pub;
 tf::TransformListener *tf_listener;
 double voxel_size_;
 int min_cluster_size_;
+Eigen::Vector2f last_human_pos_;
+KalmanFilter kalman_;
 
 
 // Templated functions declaration & definition
@@ -180,6 +181,26 @@ vector<ClusterStats> get_cluster_stats (boost::shared_ptr<pcl::PointCloud<T> >& 
     stats.push_back(cluster_stats);
   } 
   return stats;
+}
+
+template<typename T> 
+ClusterStats get_cluster_stats (boost::shared_ptr<pcl::PointCloud<T> >& pc){
+  
+  boost::accumulators::accumulator_set< float, boost::accumulators::stats<boost::accumulators::tag::mean, boost::accumulators::tag::variance, boost::accumulators::tag::min, boost::accumulators::tag::max, boost::accumulators::tag::median> > x_acc, y_acc, z_acc; 
+  for(int i=0; i< pc->points.size();i++ ){
+    T p = pc->points[i];
+    x_acc(p.x);
+    y_acc(p.y);
+    z_acc(p.z);
+  }
+  ClusterStats cluster_stats;
+  cluster_stats.mean = ClusterPoint(boost::accumulators::mean(x_acc), boost::accumulators::mean(y_acc), boost::accumulators::mean(z_acc));
+  cluster_stats.var = ClusterPoint(boost::accumulators::variance(x_acc), boost::accumulators::variance(y_acc), boost::accumulators::variance(z_acc));
+  cluster_stats.min = ClusterPoint(boost::accumulators::min(x_acc), boost::accumulators::min(y_acc), boost::accumulators::min(z_acc));    
+  cluster_stats.max = ClusterPoint(boost::accumulators::max(x_acc), boost::accumulators::max(y_acc), boost::accumulators::max(z_acc));    
+  cluster_stats.median = ClusterPoint(boost::accumulators::median(x_acc), boost::accumulators::median(y_acc), boost::accumulators::median(z_acc));    
+    
+  return cluster_stats;
 }
 
 template<typename T, typename T2> 

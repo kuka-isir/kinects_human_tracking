@@ -20,7 +20,7 @@ int main(int argc, char** argv){
   nh_priv.getParam("clusters_topic_name",clusters_topic_name);
   nh_priv.getParam("out_topic_name",out_topic_name);
   nh_priv.getParam("voxel_size",voxel_size_);
-  min_cluster_size_ = 100;
+  min_cluster_size_ = 200;
   
   // Initialize PointClouds
   pcl_pc1 = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
@@ -37,11 +37,30 @@ int main(int argc, char** argv){
   human_pc_pub = nh.advertise<PointCloudSM>(out_topic_name, 1);
   cloud_mini_pt_pub = nh.advertise<geometry_msgs::PointStamped>("kinect_both/min_human_pt",1);
   dist_pt_pub = nh.advertise<geometry_msgs::PointStamped>("kinect_both/min_robot_pt",1);
+  human_pose_pub = nh.advertise<geometry_msgs::PointStamped>("kinect_both/human_pose",1);
+  human_pose_obs_pub = nh.advertise<geometry_msgs::PointStamped>("kinect_both/human_obs",1);
   
   message_filters::Subscriber<PCMsg> kinect_pc_sub(nh, kinect_topic_name, 1);
   message_filters::Subscriber<PCMsg> robot_pc_sub(nh, robot_topic_name, 1);
   message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(50), kinect_pc_sub, robot_pc_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
+  
+  // Initialize Kalman filter
+  Eigen::Vector2f jerk_std;
+  jerk_std(0) = 0.01;
+  jerk_std(1) = 0.01;
+  Eigen::Vector2f measur_std;
+  measur_std(0) = 0.01;
+  measur_std(1) = 0.01;
+  float delta_t = 1/30;
+  Eigen::Matrix<float, 6, 1> x_k1;
+  x_k1.fill(0.0);
+  Eigen::Matrix<float, 6, 6> init_cov;
+  init_cov.fill(0.0);
+  kalman_.init(jerk_std, measur_std, delta_t, x_k1, init_cov);
+  
+  last_human_pos_(0) = 0.0;
+  last_human_pos_(1) = 0.0;
   
   ros::spin();
   return 0;
@@ -98,16 +117,12 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     }
     nb_clusters_left++;
   }
-  clustered_cloud->width = clustered_cloud->points.size();
-  clustered_cloud->height = 1;
-  clustered_cloud->is_dense = true;
-  human_pc_pub.publish(*clustered_cloud);
-    
 
   // Transform the robot's pointCloud
   sensor_msgs::PointCloud2 pcl_out; 
-  tf_listener->waitForTransform(clustered_cloud->header.frame_id, robot_pc_msg->header.frame_id, robot_pc_msg->header.stamp, ros::Duration(10.0)); 
+  tf_listener->waitForTransform(clustered_cloud->header.frame_id, robot_pc_msg->header.frame_id, robot_pc_msg->header.stamp, ros::Duration(5.0)); 
   pcl_ros::transformPointCloud(clustered_cloud->header.frame_id, *robot_pc_msg, pcl_out, *tf_listener); 
+  
   pcl::fromROSMsg(pcl_out, *robot_pc);
   
   // Downsample the robot's cloud
@@ -117,9 +132,75 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   double min_dist;
   geometry_msgs::PointStamped pt_human, pt_robot;
   get_closest_cluster_to_robot(clustered_cloud, cluster_indices, robot_pc, clustered_cloud, min_dist, pt_human, pt_robot);
-  cloud_mini_pt_pub.publish<geometry_msgs::PointStamped>(pt_human);
-  dist_pt_pub.publish<geometry_msgs::PointStamped>(pt_robot);
   
+  // min_dist!=0 means we have at least one cluster
+  if (nb_clusters_left>0){
+    // Publish human pointCloud
+    clustered_cloud->width = clustered_cloud->points.size();
+    clustered_cloud->height = 1;
+    clustered_cloud->is_dense = true;
+    human_pc_pub.publish(*clustered_cloud);
+    
+    // Publish minimum points 
+    cloud_mini_pt_pub.publish<geometry_msgs::PointStamped>(pt_human);
+    dist_pt_pub.publish<geometry_msgs::PointStamped>(pt_robot);
+    
+    // TODO
+    // Transform the cloud to the world frame before computing the stats
+    tf::StampedTransform stampedTransform;
+    tf_listener->waitForTransform(robot_pc_msg->header.frame_id, clustered_cloud->header.frame_id, ros::Time::now(), ros::Duration(5.0)); 
+    tf_listener->lookupTransform(robot_pc_msg->header.frame_id, clustered_cloud->header.frame_id, ros::Time(0.0), stampedTransform);
+    tf::Transform transform;
+    transform.setBasis(stampedTransform.getBasis());
+    transform.setOrigin(stampedTransform.getOrigin());
+    transform.setRotation(stampedTransform.getRotation());
+    pcl_ros::transformPointCloud(*clustered_cloud, *clustered_cloud, transform); 
+    
+    // Get stats on human's pointCloud
+    ClusterStats human_stats = get_cluster_stats(clustered_cloud);
+    
+    Eigen::Vector2f obs;
+    obs(0) = human_stats.median(0);
+    obs(1) = human_stats.median(1);
+    Eigen::Matrix<float, 6, 1>  x_k1;
+    x_k1.fill(0.);
+    x_k1(0,0) = obs(0);
+    x_k1(1,0) = obs(1);
+    
+    geometry_msgs::PointStamped human_obs;
+    human_obs.header.frame_id="base_link";
+    human_obs.point.x = obs(0);
+    human_obs.point.y = obs(1);
+    human_pose_obs_pub.publish<geometry_msgs::PointStamped>(human_obs);
+    
+    cout << "Obs :"<<endl;
+    cout << obs(0)<<endl;
+    cout << obs(1)<<endl;
+    cout << "Last pose :"<<endl;
+    cout << last_human_pos_(0)<<endl;
+    cout << last_human_pos_(1)<<endl;
+    cout << "Norm diff : "<< (last_human_pos_-obs).norm()<<endl<<endl;
+    
+    if ( (last_human_pos_-obs).norm() > 0.2){
+      kalman_.init(Eigen::Vector2f(2.5,2.5), Eigen::Vector2f(0.01,0.01), -1, x_k1);
+      cout << "New human to far. Reinitializing "<<endl<<endl;
+    }
+  
+    // Feed the Kalman filter with the observation and get back the estimated state
+    float delta_t = 0.03;
+    Eigen::Matrix<float, 6, 1> est;
+    kalman_.estimate(obs, delta_t, est); 
+    
+    last_human_pos_(0) = est(0);
+    last_human_pos_(1) = est(1);
+    
+    geometry_msgs::PointStamped human_pose;
+    human_pose.header.frame_id="base_link";
+    human_pose.point.x = last_human_pos_(0);
+    human_pose.point.y = last_human_pos_(1);
+    human_pose_pub.publish<geometry_msgs::PointStamped>(human_pose);
+    
+  }
 }
 
 void get_closest_cluster_to_robot(PointCloudSM::Ptr human_clustered_pc, vector<pcl::PointIndices> cluster_indices, pcl::PointCloud<pcl::PointXYZ>::Ptr robot_pc, PointCloudSM::Ptr pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
@@ -130,9 +211,8 @@ void get_closest_cluster_to_robot(PointCloudSM::Ptr human_clustered_pc, vector<p
   
   double min_dist;
   vector<double> min_dists;
-  geometry_msgs::PointStamped pt_human, pt_robot;
   for(int i=0; i<cluster_indices.size();i++){
-    pc_to_pc_min_dist(human_clustered_pc, robot_pc, min_dist, pt_human, pt_robot);
+    pc_to_pc_min_dist(human_clustered_pc, robot_pc, min_dist, pc1_pt_min, pc2_pt_min);
     min_dists.push_back(min_dist);
   }
   

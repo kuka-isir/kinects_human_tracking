@@ -1,5 +1,5 @@
 <launch>
-  <arg name="kinect_name" default="kinect2"/>
+  <arg name="kinect_name" default="kinect1"/>
   
   <node name="background_store" pkg="kinects_human_tracking" type="kinect_background_store" output="screen">
     <param name="bg_frames" value="10" />
