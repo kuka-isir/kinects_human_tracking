@@ -101,7 +101,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+ INCLUDE_DIRS include
 #  LIBRARIES kinects_human_tracking
 #  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport libpcl-all-dev pcl_conversions pcl_ros roscpp rospy sensor_msgs std_msgs tf tf_conversions vision_opencv visualization_msgs
 #  DEPENDS system_lib
@@ -115,7 +115,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
-#   include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -129,6 +129,7 @@ add_executable(kinect_background_store src/kinect_background_store.cpp)
 add_executable(kinect_background_sub src/kinect_background_sub.cpp)
 add_executable(merge_kinects_pc src/merge_kinects_pc.cpp)
 add_executable(kinect_human_detection src/kinect_human_detection.cpp)
+add_executable(kinect_human_tracking src/kinect_human_tracking.cpp src/kalmanFilter.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
@@ -139,6 +140,7 @@ target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
 target_link_libraries(kinect_background_sub  ${catkin_LIBRARIES})
 target_link_libraries(merge_kinects_pc ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 target_link_libraries(kinect_human_detection ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(kinect_human_tracking  ${catkin_LIBRARIES})
 
 #############
 ## Install ##

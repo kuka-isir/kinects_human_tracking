@@ -1,0 +1,17 @@
+<launch>
+
+  <arg name="kinect_topic_name" default="kinect_both"/>
+  <arg name="robot_topic_name" default="robot_model_to_pointcloud/robot_cloud2" />
+  <arg name="clusters_topic_name" default="kinect_both/clusters" />
+  <arg name="out_topic_name" default="kinect_both/human_detection" />
+  <arg name="voxel_size" default="0.05" />
+
+  <node name="kinect_human_tracking" pkg="kinects_human_tracking" type="kinect_human_tracking" output="screen">
+    <param name="kinect_topic_name" value="$(arg kinect_topic_name)" />
+    <param name="robot_topic_name" value="$(arg robot_topic_name)" />
+    <param name="clusters_topic_name" value="$(arg clusters_topic_name)" />
+    <param name="out_topic_name" value="$(arg out_topic_name)" />
+    <param name="voxel_size" value="$(arg voxel_size)" />
+  </node>
+
+</launch>
