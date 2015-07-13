@@ -1,9 +1,8 @@
 #include <kinects_human_tracking/kinect_human_tracking.hpp>
-
 /**
    Subscribe to a pointCloud and figure if there is 
    a human inside. Then track him using a Kalman filter
-**/
+ */
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "kinect_human_tracking");
@@ -11,24 +10,46 @@ int main(int argc, char** argv){
   tf_listener_ = new tf::TransformListener();
   sleep(0.5); //to make sure tf_listener is ready
   
-  ROS_INFO("Initializing ...");
+  ROS_INFO("Initializing ...");  
    
   // Get params topics and frames names
   string kinect_topic_name, robot_topic_name, clusters_topic_name, out_topic_name;
+  XmlRpc::XmlRpcValue clipping_rules_bounds;
   nh_priv.getParam("kinect_topic_name",kinect_topic_name);
   nh_priv.getParam("robot_topic_name",robot_topic_name);
   nh_priv.getParam("clusters_topic_name",clusters_topic_name);
   nh_priv.getParam("out_topic_name",out_topic_name);
   nh_priv.getParam("voxel_size",voxel_size_);
-  min_cluster_size_ = 200; //TODO Make this a param
+  nh_priv.getParam("min_cluster_size",min_cluster_size_);
+  nh_priv.getParam("kinect_noise",kinect_noise_);
+  nh_priv.getParam("process_noise",process_noise_);
+  nh_priv.getParam("minimum_height",minimum_height_);
+  nh_priv.getParam("max_tracking_jump",max_tracking_jump_);
+  nh_priv.getParam("clipping_rules",clipping_rules_bounds);
+  
+  if (clipping_rules_bounds.size()>0){
+    if (clipping_rules_bounds.size()%3)
+      ROS_ERROR("Problem in defining the clipping rules.\n Use the following format:\n [x, GT, 1.0, y, LT, 3.1, ...]");
+    else{
+      clipping_rules_.resize(clipping_rules_bounds.size()/3);
+      ClippingRule new_rule;
+      for(int i=0; i<clipping_rules_bounds.size()/3;i++){
+	new_rule.axis = static_cast<string>(clipping_rules_bounds[i*3]);//   clipping_rules_bounds[i*3];
+	new_rule.op = static_cast<string>(clipping_rules_bounds[i*3+1]);//   clipping_rules_bounds[i*3];
+	new_rule.val = static_cast<double>(clipping_rules_bounds[i*3+2]);//   clipping_rules_bounds[i*3];
+	clipping_rules_.at(i) = new_rule;
+      }
+    }
+    cout<<clipping_rules_.size()<< " clipping rules loaded"<<endl;
+  }
   
   // Initialize PointClouds
-  pcl_pc1_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
+  kinects_pc_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   robot_pc_ = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> >(new pcl::PointCloud<pcl::PointXYZ>);
   clustered_cloud_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   
   // Reserve memory for clouds
-  pcl_pc1_->reserve(10000);
+  kinects_pc_->reserve(10000);
   robot_pc_->reserve(10000);
   clustered_cloud_->reserve(10000);
   
@@ -45,25 +66,19 @@ int main(int argc, char** argv){
   message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(50), kinect_pc_sub, robot_pc_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
   
-  // TODO Make these be params
   // Initialize Kalman filter
-  Eigen::Vector2f jerk_std;
-  jerk_std(0) = 0.01;
-  jerk_std(1) = 0.01;
-  Eigen::Vector2f measur_std;
-  measur_std(0) = 0.01;
-  measur_std(1) = 0.01;
-  float delta_t = 1/30; //Assuming we should get about 30FPS
   Eigen::Matrix<float, 6, 1> x_k1;
   x_k1.fill(0.0);
   Eigen::Matrix<float, 6, 6> init_cov;
   init_cov.fill(0.0);
-  kalman_.init(jerk_std, measur_std, delta_t, x_k1, init_cov);
+  kalman_.init(Eigen::Vector2f(kinect_noise_, process_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1, init_cov);
   
-  last_human_pos_(0) = 0.0;
-  last_human_pos_(1) = 0.0;
+  // Initializing the human's position at the origin
+  last_human_pos_ = Eigen::Vector2f(0.0, 0.0);
   
   ROS_INFO("Human tracker ready !");
+  
+  last_observ_time_ = ros::Time(0.0);
   
   ros::spin();
   return 0;
@@ -72,93 +87,72 @@ int main(int argc, char** argv){
 void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_pc_msg){
   
   // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
-  pcl::fromROSMsg(*human_pc_msg, *pcl_pc1_);
+  pcl::fromROSMsg(*human_pc_msg, *kinects_pc_);
   
   // Remove all the NaNs
   vector<int> indices;
-  pcl::removeNaNFromPointCloud<pcl::PointXYZRGB>(*pcl_pc1_, *pcl_pc1_, indices);
+  pcl::removeNaNFromPointCloud<pcl::PointXYZRGB>(*kinects_pc_, *kinects_pc_, indices);
   
-  // TODO Load clipping rules from XML or launch file
-  // Clip pointcloud, here just to remove everything below z==0 
-  vector<ClippingRule> clipping_rules;
-  ClippingRule ground_remove;
-  ground_remove.axis = "z";
-  ground_remove.op = "GT";
-  ground_remove.val = 0.0;
-  clipping_rules.push_back(ground_remove);
-  pc_clipping(pcl_pc1_, clipping_rules , pcl_pc1_);
+  // Clip pointcloud using the rules defined in params
+  pc_clipping(kinects_pc_, clipping_rules_ , kinects_pc_);
   
   // Downsampling of the kinects cloud  
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
-  pc_downsampling(pcl_pc1_, pc_filtered, voxel_size_);
+  pc_downsampling(kinects_pc_, pc_filtered, voxel_size_);
   
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices = pc_clustering(pc_filtered, 2*voxel_size_ ,pc_filtered);
   pc_clustered_pub_.publish(*pc_filtered);
   
-  // TODO Before gettting stats, the poincloud need to be in the 'base_link' frame
-  // Getting heights for all clusters
-  std::vector<double> cluster_heights; 
-  vector<ClusterStats> stats = get_clusters_stats (pc_filtered , cluster_indices);
-  for(int i=0; i<stats.size();i++){
-    std::string tmp = boost::lexical_cast<std::string>(stats[i].max-stats[i].min);
-    double cluster_height = (double)atof(tmp.c_str());
-    cluster_heights.push_back(cluster_height);
-  }
+  int nb_clusters = cluster_indices.size();
   
-  // TODO  Make height be a param
-  // Selecting only the clusters with height superior to 0.3
-  int j = -1, nb_clusters_left = 0;
-  pcl::copyPointCloud(*pc_filtered, *clustered_cloud_);
-  clustered_cloud_->points.clear();
-  clustered_cloud_->width = 0;
-  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it){
-    j++;
-    if(cluster_heights[j]<0.3)
-      continue;
-    
-    for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-      clustered_cloud_->points.push_back(pc_filtered->points[*pit]); 
-      clustered_cloud_->width++;
+  if(minimum_height_ >0){
+    // Getting heights for all clusters
+    std::vector<double> cluster_heights; 
+    vector<ClusterStats> stats = get_clusters_stats (pc_filtered , cluster_indices);
+    for(int i=0; i<nb_clusters;i++){
+      std::string tmp = boost::lexical_cast<std::string>(stats[i].max-stats[i].min);
+      double cluster_height = (double)atof(tmp.c_str());
+      cluster_heights.push_back(cluster_height);
     }
-    nb_clusters_left++;
-  }
 
-  // Transform the robot's pointCloud
-  sensor_msgs::PointCloud2 pcl_out; 
-  tf_listener_->waitForTransform(clustered_cloud_->header.frame_id, robot_pc_msg->header.frame_id, robot_pc_msg->header.stamp, ros::Duration(5.0)); 
-  pcl_ros::transformPointCloud(clustered_cloud_->header.frame_id, *robot_pc_msg, pcl_out, *tf_listener_); 
+  // Selecting only the clusters with the minimum_height
+   //Negative minimum height means we don't care about the height at all
+    int j = -1;
+    pcl::copyPointCloud(*pc_filtered, *clustered_cloud_);
+    clustered_cloud_->points.clear();
+    for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it){
+      j++;
+      if(cluster_heights[j]<minimum_height_){
+	nb_clusters--;
+	continue;
+      }
+      
+      for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
+	clustered_cloud_->points.push_back(pc_filtered->points[*pit]); 
+    }
+    clustered_cloud_->width = clustered_cloud_->points.size();
+  }
+  else
+    pcl::copyPointCloud(*pc_filtered, *clustered_cloud_);
   
-  pcl::fromROSMsg(pcl_out, *robot_pc_);
+  // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
+  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);
   
   // Downsample the robot's cloud
-  pc_downsampling(robot_pc_,robot_pc_,voxel_size_);
+  pc_downsampling(robot_pc_, robot_pc_, voxel_size_);
   
   // Get closest cluster to the robot
-  double min_dist;
-  geometry_msgs::PointStamped pt_human, pt_robot;
-  get_closest_cluster_to_robot(clustered_cloud_,cluster_indices, robot_pc_, clustered_cloud_, min_dist, pt_human, pt_robot);
+  get_closest_cluster_to_robot(clustered_cloud_, cluster_indices, robot_pc_, clustered_cloud_, last_min_dist_, last_human_pt_, last_robot_pt_);
   
   // min_dist!=0 means we have at least one cluster
-  if (nb_clusters_left>0){
+  if (nb_clusters>0){
     // Publish human pointCloud
-    clustered_cloud_->width = clustered_cloud_->points.size();
     human_pc_pub_.publish(*clustered_cloud_);
     
     // Publish minimum points 
-    cloud_mini_pt_pub_.publish<geometry_msgs::PointStamped>(pt_human);
-    dist_pt_pub_.publish<geometry_msgs::PointStamped>(pt_robot);
-    
-    // TODO Save the transform once and for all so we don't have to load it every time
-    // Transform the cloud to the world frame before computing the stats
-    tf::StampedTransform stampedTransform;
-    tf_listener_->waitForTransform(robot_pc_msg->header.frame_id, clustered_cloud_->header.frame_id, ros::Time::now(), ros::Duration(5.0)); 
-    tf_listener_->lookupTransform(robot_pc_msg->header.frame_id, clustered_cloud_->header.frame_id, ros::Time(0.0), stampedTransform);
-    tf::Transform transform;
-    transform.setBasis(stampedTransform.getBasis());
-    transform.setOrigin(stampedTransform.getOrigin());
-    transform.setRotation(stampedTransform.getRotation());
-    pcl_ros::transformPointCloud(*clustered_cloud_, *clustered_cloud_, transform); 
+    cloud_mini_pt_pub_.publish<geometry_msgs::PointStamped>(last_human_pt_);
+    dist_pt_pub_.publish<geometry_msgs::PointStamped>(last_robot_pt_);
     
     // Get stats on human's pointCloud
     ClusterStats human_stats = get_cluster_stats(clustered_cloud_);
@@ -174,22 +168,26 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     
     // Publish human observation
     geometry_msgs::PointStamped human_obs;
-    human_obs.header.frame_id="base_link"; //TODO no hard coding here !!!
+    human_obs.header.frame_id = robot_pc_msg->header.frame_id; 
     human_obs.point.x = obs(0);
     human_obs.point.y = obs(1);
-    human_pose_obs_pub_.publish<geometry_msgs::PointStamped>(human_obs);
+    human_pose_obs_pub_.publish(human_obs);
     
-    // TODO Make the distance a parameter
     // If the new observation is too far from the previous one, reinitialize
-    if ( (last_human_pos_-obs).norm() > 0.2){
-      kalman_.init(Eigen::Vector2f(2.5,2.5), Eigen::Vector2f(0.01,0.01), -1, x_k1);
+    if ( (last_human_pos_-obs).norm() > max_tracking_jump_){
+      kalman_.init(Eigen::Vector2f(kinect_noise_, process_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1);
       ROS_INFO("New human pose to far. Reinitializing !");
     }
   
     // Feed the Kalman filter with the observation and get back the estimated state
-    float delta_t = 0.03;
+    float delta_t;
+    if (last_observ_time_.sec == 0)
+      delta_t = -1;
+    else
+      delta_t = ros::Time::now().sec - last_observ_time_.sec + (ros::Time::now().nsec - last_observ_time_.nsec)*pow(0.1,9);
     Eigen::Matrix<float, 6, 1> est;
     kalman_.estimate(obs, delta_t, est); 
+    last_observ_time_ = ros::Time::now();
     
     // Save new estimated pose
     last_human_pos_(0) = est(0);
@@ -197,9 +195,9 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     
     // Publish human estimated pose
     geometry_msgs::PointStamped human_pose;
-    human_pose.header.frame_id="base_link";
+    human_pose.header.frame_id = robot_pc_msg->header.frame_id;
     human_pose.point.x = last_human_pos_(0);
     human_pose.point.y = last_human_pos_(1);
-    human_pose_pub_.publish<geometry_msgs::PointStamped>(human_pose);
+    human_pose_pub_.publish(human_pose);
   }
 }

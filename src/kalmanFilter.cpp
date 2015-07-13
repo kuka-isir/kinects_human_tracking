@@ -27,7 +27,11 @@ void KalmanFilter::init(Eigen::Vector2f jerk_std,
   sigma_jerk_(0,0) = pow(jerk_std(0),2);
   sigma_jerk_(1,1) = pow(jerk_std(1),2);
 
-  delta_t_ = delta_t;
+  if (delta_t <=0)
+    delta_t_ = 1/30; // We aim for 30 FPS
+  else  
+    delta_t_ = delta_t;
+  
   delta_change();
 }
 

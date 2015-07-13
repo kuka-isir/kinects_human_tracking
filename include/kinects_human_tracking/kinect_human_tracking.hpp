@@ -40,7 +40,6 @@
 #include <pcl_ros/point_cloud.h>
 
 #include <kinects_human_tracking/kalmanFilter.hpp>
-
 /**
    Subscribe to a pointCloud and figure if there is 
    a human inside. Then track him using a Kalman filter
@@ -84,14 +83,18 @@ typedef struct ClippingRule ClippingRule;
 void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_pc_msg);
 
 // Global variables
-PointCloudSM::Ptr pcl_pc1_, clustered_cloud_;
+PointCloudSM::Ptr kinects_pc_, clustered_cloud_;
 pcl::PointCloud<pcl::PointXYZ>::Ptr robot_pc_;
 ros::Publisher human_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, human_pose_pub_, human_pose_obs_pub_;
 tf::TransformListener *tf_listener_;
-double voxel_size_;
+tf::Transform transform_;
+double last_min_dist_, voxel_size_, kinect_noise_, process_noise_, minimum_height_, max_tracking_jump_;
+geometry_msgs::PointStamped last_human_pt_, last_robot_pt_;
 int min_cluster_size_;
 Eigen::Vector2f last_human_pos_;
 KalmanFilter kalman_;
+ros::Time last_observ_time_;
+vector<ClippingRule> clipping_rules_;
 
 
 // Templated functions declaration & definition
@@ -237,11 +240,11 @@ ClusterStats get_cluster_stats (boost::shared_ptr<pcl::PointCloud<PointT> >& pc)
 }
 
 /** \fn void pc_to_pc_min_dist(pcl::PointCloud<PointT>::Ptr pc1, pcl::PointCloud<PointT2>::Ptr pc2, double& min_dist, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
- *  \brief Computes the minimum distance between two poinClouds
- *  \param pc1 First poinCloud
- *  \param pc2 Second poinCloud
+ *  \brief Computes the minimum distance between two pointClouds
+ *  \param pc1 First pointCloud
+ *  \param pc2 Second pointCloud
  *  \param min_dist Returned minimum distance value
- *  \param pc1_pt_min Returned closest point on the first poinCloud 
+ *  \param pc1_pt_min Returned closest point on the first pointCloud 
  *  \param pc2_pt_min Returned closest point on the second pointCloud
  */
 template<typename PointT, typename PointT2> 
