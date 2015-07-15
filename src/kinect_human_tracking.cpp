@@ -88,6 +88,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   
   // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
   pcl::fromROSMsg(*human_pc_msg, *kinects_pc_);
+  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);
   
   // Remove all the NaNs
   vector<int> indices;
@@ -96,9 +97,10 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   // Clip pointcloud using the rules defined in params
   pc_clipping(kinects_pc_, clipping_rules_ , kinects_pc_);
   
-  // Downsampling of the kinects cloud  
+  // Downsampling the two pointClouds
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc_filtered(new pcl::PointCloud<pcl::PointXYZRGB>);
   pc_downsampling(kinects_pc_, pc_filtered, voxel_size_);
+  pc_downsampling(robot_pc_, robot_pc_, voxel_size_);
   
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices = pc_clustering(pc_filtered, 2*voxel_size_ ,pc_filtered);
@@ -116,8 +118,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
       cluster_heights.push_back(cluster_height);
     }
 
-  // Selecting only the clusters with the minimum_height
-   //Negative minimum height means we don't care about the height at all
+    // Selecting only the clusters with the minimum_height
     int j = -1;
     pcl::copyPointCloud(*pc_filtered, *clustered_cloud_);
     clustered_cloud_->points.clear();
@@ -127,25 +128,17 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
 	nb_clusters--;
 	continue;
       }
-      
       for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit)
 	clustered_cloud_->points.push_back(pc_filtered->points[*pit]); 
     }
     clustered_cloud_->width = clustered_cloud_->points.size();
   }
   else
-    pcl::copyPointCloud(*pc_filtered, *clustered_cloud_);
-  
-  // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
-  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);
-  
-  // Downsample the robot's cloud
-  pc_downsampling(robot_pc_, robot_pc_, voxel_size_);
+    pcl::copyPointCloud(*pc_filtered, *clustered_cloud_); 
   
   // Get closest cluster to the robot
   get_closest_cluster_to_robot(clustered_cloud_, cluster_indices, robot_pc_, clustered_cloud_, last_min_dist_, last_human_pt_, last_robot_pt_);
   
-  // min_dist!=0 means we have at least one cluster
   if (nb_clusters>0){
     // Publish human pointCloud
     human_pc_pub_.publish(*clustered_cloud_);

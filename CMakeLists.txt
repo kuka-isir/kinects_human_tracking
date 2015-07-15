@@ -4,9 +4,6 @@ project(kinects_human_tracking)
 set(CMAKE_BUILD_TYPE Release)
 
 ## Find non-catkin packages
-find_package(OpenCV REQUIRED)
-include_directories(${OpenCV_include_dirs})
-
 find_package(PCL 1.7 REQUIRED)
 include_directories(${PCL_INCLUDE_DIRS})
 include_directories(${PCL_LIBRARY_DIRS})
@@ -128,7 +125,6 @@ include_directories(
 add_executable(kinect_background_store src/kinect_background_store.cpp)
 add_executable(kinect_background_sub src/kinect_background_sub.cpp)
 add_executable(merge_kinects_pc src/merge_kinects_pc.cpp)
-add_executable(kinect_human_detection src/kinect_human_detection.cpp)
 add_executable(kinect_human_tracking src/kinect_human_tracking.cpp src/kalmanFilter.cpp)
 
 ## Add cmake target dependencies of the executable/library
@@ -138,8 +134,7 @@ add_executable(kinect_human_tracking src/kinect_human_tracking.cpp src/kalmanFil
 ## Specify libraries to link a library or executable target against
 target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
 target_link_libraries(kinect_background_sub  ${catkin_LIBRARIES})
-target_link_libraries(merge_kinects_pc ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
-target_link_libraries(kinect_human_detection ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(merge_kinects_pc ${catkin_LIBRARIES})
 target_link_libraries(kinect_human_tracking  ${catkin_LIBRARIES})
 
 #############
