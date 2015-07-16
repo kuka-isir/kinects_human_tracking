@@ -8,14 +8,11 @@
    Kalman Filter with state (x,y,vx,vy) and measurement (x,y)
 **/
 
-typedef Eigen::Matrix<float, 6, 1> State;
 using namespace std;
-
 
 class KalmanFilter{
 
 public:
-  //TODO: What parameters in constructor ?
   KalmanFilter();
   
   void init(Eigen::Vector2f jerk_std,

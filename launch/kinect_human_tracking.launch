@@ -4,12 +4,12 @@
   <arg name="robot_topic_name" default="robot_model_to_pointcloud/robot_cloud2" />
   <arg name="clusters_topic_name" default="kinect_both/clusters" />
   <arg name="out_topic_name" default="kinect_both/human_detection" />
-  <arg name="voxel_size" default="0.05" />
-  <arg name="min_cluster_size" default="200" />
+  <arg name="voxel_size" default="0.02" />
+  <arg name="min_cluster_size" default="100" />
   <arg name="process_noise" default="0.1" />
   <arg name="kinect_noise" default="0.01" />
-  <arg name="minimum_height" default="0.5" />
-  <arg name="max_tracking_jump" default="0.2" />
+  <arg name="minimum_height" default="0.2" />
+  <arg name="max_tracking_jump" default="0.3" />
   
 
   <node name="kinect_human_tracking" pkg="kinects_human_tracking" type="kinect_human_tracking" output="screen">

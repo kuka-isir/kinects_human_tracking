@@ -1,3 +1,6 @@
+#ifndef KINECT_HUMAN_TRACKING
+#define KINECT_HUMAN_TRACKING
+
 //pcl includes
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
@@ -11,6 +14,7 @@
 #include <pcl/search/kdtree.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/common/common_headers.h>
+#include <pcl/filters/extract_indices.h>
 
 //boost includes
 #include <boost/lexical_cast.hpp>
@@ -27,7 +31,6 @@
 
 //ros-includes
 #include <ros/ros.h>
-#include <tf/transform_listener.h>
 #include <tf_conversions/tf_eigen.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -38,7 +41,8 @@
 #include <geometry_msgs/PointStamped.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_ros/point_cloud.h>
-
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <kinects_human_tracking/kalmanFilter.hpp>
 /**
    Subscribe to a pointCloud and figure if there is 
@@ -75,19 +79,10 @@ struct ClippingRule{
 };
 typedef struct ClippingRule ClippingRule;
 
-/** \fn void callback(const pcl::pointCloud kinects_pc, const pcl::pointCloud robot_pc)
- *  \brief Take both human & robot pointClouds and returns min distance to robot and human position
- *  \param kinects_pc The pointCloud containing the humans
- *  \param robot_pc The robot's pointCloud
- */
-void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_pc_msg);
-
 // Global variables
-PointCloudSM::Ptr kinects_pc_, clustered_cloud_;
+PointCloudSM::Ptr kinects_pc_, human_cloud_;
 pcl::PointCloud<pcl::PointXYZ>::Ptr robot_pc_;
-ros::Publisher human_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, human_pose_pub_, human_pose_obs_pub_;
-tf::TransformListener *tf_listener_;
-tf::Transform transform_;
+ros::Publisher human_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, human_state_pub_;
 double last_min_dist_, voxel_size_, kinect_noise_, process_noise_, minimum_height_, max_tracking_jump_;
 geometry_msgs::PointStamped last_human_pt_, last_robot_pt_;
 int min_cluster_size_;
@@ -97,34 +92,52 @@ ros::Time last_observ_time_;
 vector<ClippingRule> clipping_rules_;
 
 
+// Functions declaration
+
+/** \fn void callback(const pcl::pointCloud kinects_pc, const pcl::pointCloud robot_pc)
+ *  \brief Take both human & robot pointClouds and returns min distance to robot and human position
+ *  \param[in] kinects_pc The pointCloud containing the humans
+ *  \param[in] robot_pc The robot's pointCloud
+ */
+void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_pc_msg);
+
+/** \fn void visualize_state (Eigen::Matrix<float, 6, 1> state, ClusterStats stats, ros::Publisher state_pub)
+ *  \brief Take both human & robot pointClouds and returns min distance to robot and human position
+ *  \param[in] state vector containing the estimated state of the human
+ *  \param[in] stats stats on the human cluster
+ *  \param[in] state_pub publisher to publish the markerArray cylinders
+ */
+void visualize_state (Eigen::Matrix<float, 6, 1> state, ClusterStats stats, ros::Publisher state_pub);
+
+
 // Templated functions declaration & definition
 
-/** \fn void pc_downsampling(pcl::PointCloud<PointT>::Ptr pc_in, pcl::PointCloud<PointT>::Ptr pc_out, double& voxel_size){
+/** \fn void pc_downsampling(pcl::PointCloud<PointT>::Ptr pc_in, double& voxel_size, pcl::PointCloud<PointT>::Ptr pc_out){
  *  \brief Uses voxels to return downsampled version of the pointCloud 
- *  \param pc_in pointCloud to downsample
- *  \param pc_out poinCloud downsampled
+ *  \param[in] pc_in pointCloud to downsample
+ *  \param[in] voxel_size distance wanted between each points
+ *  \param[out] pc_out poinCloud downsampled
  */
 template<typename PointT> 
-void pc_downsampling(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out,double& voxel_size){
+void pc_downsampling(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, double& voxel_size, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out){
   
   pcl::VoxelGrid<PointT> vox_grid;
   vox_grid.setInputCloud(pc_in);
-  vox_grid.setLeafSize(voxel_size,voxel_size,voxel_size);
+  vox_grid.setLeafSize(voxel_size_,voxel_size_,voxel_size_);
   vox_grid.filter(*pc_out);
   
 }
 
 /** \fn void pc_clipping(pcl::PointCloud<PointT>::Ptr pc_in, std::vector<ClippingRule> clipping_rules, pcl::PointCloud<PointT>::Ptr pc_clipped)
  *  \brief Removes parts of the cloud according to specified regions
- *  \param pc_in pointCloud to modify
- *  \param clipping_rules specifies regions we want to keep in the pointCloud
- *  \param pc_clipped poinCloud clipped
+ *  \param[in] pc_in pointCloud to modify
+ *  \param[in] clipping_rules specifies regions we want to keep in the pointCloud
+ *  \param[out] pc_clipped poinCloud clipped
  */
 template<typename PointT> 
 void pc_clipping(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, std::vector<ClippingRule> clipping_rules, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_clipped){
   
   typename pcl::ConditionAnd<PointT>::Ptr height_cond (new pcl::ConditionAnd<PointT> ());
-  
   for(size_t i=0; i<clipping_rules.size(); i++){
   
     string axis = clipping_rules[i].axis;
@@ -158,9 +171,9 @@ void pc_clipping(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, std::vector
 
 /** \fn vector<pcl::PointIndices> pc_clustering(pcl::PointCloud<PointT>::Ptr pc_in, double cluster_tolerance, pcl::PointCloud<PointT>::Ptr pc_out)
  *  \brief Finds out the clusters inside the given poinCloud 
- *  \param pc_in pointCloud to cluster
- *  \param cluster_tolerance specifies the distance required between two points to be considered inside the same cluster
- *  \param clustered_pc clustered version of the pointCloud
+ *  \param[in] pc_in pointCloud to cluster
+ *  \param[in] cluster_tolerance specifies the distance required between two points to be considered inside the same cluster
+ *  \param[out] clustered_pc clustered version of the pointCloud
  *  \return The indices corresponding to the clusters
  */
 template<typename PointT>
@@ -169,24 +182,48 @@ vector<pcl::PointIndices> pc_clustering(boost::shared_ptr<pcl::PointCloud<PointT
   pcl::copyPointCloud(*pc_in, *clustered_pc);
   
   typename pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
-  tree->setInputCloud (clustered_pc);
+  tree->setInputCloud (pc_in);
   
   std::vector<pcl::PointIndices> cluster_indices;
   typename pcl::EuclideanClusterExtraction<PointT> ec;
   ec.setClusterTolerance (cluster_tolerance);
   ec.setMinClusterSize (min_cluster_size_);
   ec.setSearchMethod (tree);
-  ec.setInputCloud (clustered_pc);
+  ec.setInputCloud (pc_in);
   ec.extract (cluster_indices);
   
   return cluster_indices;
   
 }
 
+/** \fn void pc_extract_clusters(pcl::PointCloud<PointT>::Ptr pc_in, vector<pcl::PointIndices> cluster_indices, vector<int> cluster_ids, pcl::PointCloud<PointT2>::Ptr pc_out)
+ *  \brief Computes the closest cluster to the robot
+ *  \param[in] pc_in Full pointCloud containing the clusters
+ *  \param[in] cluster_indices Indices corresponding to the clusters in the poinCloud
+ *  \param[in] cluster_ids Ids of the clusters to extract from the full pointCloud
+ *  \param[out] pc_out Returned pointCloud containing the desired clusters
+ */
+template<typename PointT, typename PointT2>
+void pc_extract_clusters(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, vector<pcl::PointIndices> cluster_indices, vector<int> cluster_ids, boost::shared_ptr<pcl::PointCloud<PointT2> >& pc_out){
+  
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices());
+  for(int i=0; i<cluster_ids.size(); i++){
+    for(int j=0; j<cluster_indices[cluster_ids[i]].indices.size(); j++)
+      inliers->indices.push_back(cluster_indices[cluster_ids[i]].indices[j]);
+  }
+  
+    pcl::ExtractIndices<PointT> extract;
+    extract.setInputCloud (pc_in);
+    extract.setIndices (inliers);
+    extract.setNegative (false);
+    extract.filter (*pc_out);
+    
+}
+
 /** \fn vector<ClusterStats> get_clusters_stats (pcl::PointCloud<PointT>::Ptr pc, vector<pcl::PointIndices> clusters_indices)
  *  \brief Computes statistics on the clusters
- *  \param pc pointCloud 
- *  \param clusters_indices The indices for each clusters
+ *  \param[in] pc pointCloud 
+ *  \param[out] clusters_indices The indices for each clusters
  *  \return Returns a vector containing the stats of each clusters
  */
 template<typename PointT> 
@@ -216,7 +253,7 @@ vector<ClusterStats> get_clusters_stats (boost::shared_ptr<pcl::PointCloud<Point
 
 /** \fn ClusterStats get_cluster_stats (pcl::PointCloud<PointT>::Ptr pc)
  *  \brief Removes parts of the cloud according to specified regions
- *  \param pc pointCloud 
+ *  \param[in] pc pointCloud 
  *  \return Returns the stats for the given cluster
  */
 template<typename PointT> 
@@ -241,11 +278,11 @@ ClusterStats get_cluster_stats (boost::shared_ptr<pcl::PointCloud<PointT> >& pc)
 
 /** \fn void pc_to_pc_min_dist(pcl::PointCloud<PointT>::Ptr pc1, pcl::PointCloud<PointT2>::Ptr pc2, double& min_dist, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
  *  \brief Computes the minimum distance between two pointClouds
- *  \param pc1 First pointCloud
- *  \param pc2 Second pointCloud
- *  \param min_dist Returned minimum distance value
- *  \param pc1_pt_min Returned closest point on the first pointCloud 
- *  \param pc2_pt_min Returned closest point on the second pointCloud
+ *  \param[in] pc1 First pointCloud
+ *  \param[in] pc2 Second pointCloud
+ *  \param[out] min_dist Returned minimum distance value
+ *  \param[out] pc1_pt_min Returned closest point on the first pointCloud 
+ *  \param[out] pc2_pt_min Returned closest point on the second pointCloud
  */
 template<typename PointT, typename PointT2> 
 void pc_to_pc_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> >& pc1, boost::shared_ptr<pcl::PointCloud<PointT2> >& pc2, double& min_dist, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
@@ -279,18 +316,18 @@ void pc_to_pc_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> >& pc1, boost::
   
 }
 
-/** \fn void get_closest_cluster_to_robot(pcl::PointCloud<PointT>::Ptr human_clustered_pc, vector<pcl::PointIndices> cluster_indices, pcl::PointCloud<PointT2>::Ptr robot_pc, pcl::PointCloud<PointT>::Ptr pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
+/** \fn void get_closest_cluster_to_robot(pcl::PointCloud<PointT>::Ptr clustered_pc, vector<pcl::PointIndices> cluster_indices, pcl::PointCloud<PointT2>::Ptr robot_pc, pcl::PointCloud<PointT>::Ptr pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
  *  \brief Computes the closest cluster to the robot
- *  \param human_clustered_pc pointCloud containing the clusters
- *  \param cluster_indices Indices corresponding to the clusters in the poinCloud
- *  \param robot_pc Robot's pointCloud
- *  \param pc_out Returned pointCloud containing the closest cluster to the robot
- *  \param mini Returned minimum distance between the cluster and the robot
- *  \param pc1_pt_min Returned closest point on the first poinCloud 
- *  \param pc2_pt_min Returned closest point on the second pointCloud
+ *  \param[in] clustered_pc pointCloud containing the clusters
+ *  \param[in] cluster_indices Indices corresponding to the clusters in the poinCloud
+ *  \param[in] robot_pc Robot's pointCloud
+ *  \param[out] pc_out Returned pointCloud containing the closest cluster to the robot
+ *  \param[out] mini Returned minimum distance between the cluster and the robot
+ *  \param[out] pc1_pt_min Returned closest point on the first poinCloud 
+ *  \param[out] pc2_pt_min Returned closest point on the second pointCloud
  */
 template<typename PointT, typename PointT2>
-void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& human_clustered_pc, vector<pcl::PointIndices> cluster_indices, boost::shared_ptr<pcl::PointCloud<PointT2> >& robot_pc, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
+void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& clustered_pc, vector<pcl::PointIndices> cluster_indices, boost::shared_ptr<pcl::PointCloud<PointT2> >& robot_pc, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
   
   // Check there is at least 1 cluster and that the robot cloud is published
   if ((cluster_indices.size() < 1) || (robot_pc->points.size() < 1))
@@ -298,26 +335,35 @@ void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& h
   
   double min_dist;
   vector<double> min_dists;
+  std::vector<int> cluster_id;
+  typename pcl::PointCloud<PointT>::Ptr temp_pc(new pcl::PointCloud<PointT>);
+  typename std::vector< pcl::PointCloud<PointT> > temp_pcs;
+  std::vector< geometry_msgs::PointStamped> pc1_pt_mins, pc2_pt_mins;
   for(int i=0; i<cluster_indices.size();i++){
-    pc_to_pc_min_dist(human_clustered_pc, robot_pc, min_dist, pc1_pt_min, pc2_pt_min);
+    cluster_id.clear();
+    cluster_id.push_back(i);
+    
+    pc_extract_clusters(clustered_pc, cluster_indices, cluster_id, temp_pc);
+    pc_to_pc_min_dist(temp_pc, robot_pc, min_dist, pc1_pt_min, pc2_pt_min);
+    
     min_dists.push_back(min_dist);
+    temp_pcs.push_back(*temp_pc);
+    pc1_pt_mins.push_back(pc1_pt_min);
+    pc2_pt_mins.push_back(pc2_pt_min);
   }
   
   mini = min_dists[0];
   int min_id = 0;
-  for(int i=1; i<min_dists.size();i++){
+  for(int i=0; i<min_dists.size();i++){
     if(min_dists[i] < mini){
       mini = min_dists[i];
       min_id = i;
     } 
   }
   
-  pcl::copyPointCloud(*human_clustered_pc,*pc_out);
-  pc_out->points.clear();
-  pcl::PointIndices idx = cluster_indices[min_id];
-  for (std::vector<int>::const_iterator pit = idx.indices.begin(); pit != idx.indices.end(); ++pit)
-      pc_out->points.push_back(human_clustered_pc->points[*pit]); 
-
-  pc_out->width = pc_out->points.size();
+  *pc_out = temp_pcs[min_id];
+  pc1_pt_min = pc1_pt_mins[min_id];
+  pc2_pt_min = pc2_pt_mins[min_id];
   
 }
+#endif

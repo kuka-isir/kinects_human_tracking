@@ -6,7 +6,6 @@
 #include <pcl/conversions.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/registration/transforms.h>
-#include <opencv2/opencv.hpp>
 #include <boost/timer.hpp>
 
 //ros-includes
@@ -75,7 +74,7 @@ int main(int argc, char** argv){
   pc_pub = nh.advertise<PointCloudSM>(out_topic_name, 1);
   message_filters::Subscriber<PCMsg> first_sub(nh, first_topic_name, 1);
   message_filters::Subscriber<PCMsg> second_sub(nh, second_topic_name, 1);
-  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(2), first_sub, second_sub);
+  message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), first_sub, second_sub);
   sync.registerCallback(boost::bind(&callback, _1, _2));
   
   ros::spin();

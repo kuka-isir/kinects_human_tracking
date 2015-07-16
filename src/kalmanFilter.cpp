@@ -41,12 +41,12 @@ void KalmanFilter::delta_change(){
   
   //Recompute A, state transition
   A_ = Eigen::Matrix<float, 6, 6>::Identity();
-  A_ << 1., 0., delta_t_, 0., dt2_2, 0.,
-    0., 1., 0., delta_t_, 0., dt2_2,
-    0., 0., 1., 0., delta_t_, 0.,
-    0., 0., 0., 1., 0., delta_t_,
-    0., 0., 0., 0., 1., 0.,
-    0., 0., 0., 0., 0., 1.;
+  A_ << 1., 0., delta_t_,   0.,   dt2_2,     0.,
+	0., 1.,   0.,     delta_t_, 0.,    dt2_2,
+	0., 0.,   1.,       0.,   delta_t_,  0.,
+	0., 0.,   0.,       1.,     0.,    delta_t_,
+	0., 0.,   0.,       0.,     1.,      0.,
+	0., 0.,   0.,       0.,     0.,      1.;
      
   //Recompute Q, covariance process noise
   Eigen::Matrix<float, 6, 2>  G;

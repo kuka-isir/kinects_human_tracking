@@ -1,0 +1,9 @@
+<launch>
+  <arg name="kinect_name" default="kinect1/background_sub"/>
+
+  <node name="kinect_pc_transform" pkg="kinects_human_tracking" type="pointcloud_transform" output="screen">
+    <param name="in_topic_name" value="$(arg kinect_name)" />
+    <param name="out_frame" value="world" />
+    <param name="out_topic_name" value="kinect_both" />
+  </node>
+</launch>
