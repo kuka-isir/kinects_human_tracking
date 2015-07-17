@@ -43,13 +43,15 @@ roslaunch kinects_human_tracking kinect_human_tracking.launch
 ```
 
 ## Nodes description
-### Robot pointCloud
+#### Robot pointCloud
+![robot_cloud](https://lh5.googleusercontent.com/0HJmOOGX6Bnn9JY79FnuBYpdPdczl-5YG8N-JcInhQLNzblWf6f2JhsU-NzAP_v8VyIeMoVSY7VpjKA=w1831-h851-rw)
 ```
 rosrun robot_model_to_pointcloud robot_model_to_pointcloud
 ```
 After running the robot model of your choice, just run this node to publish the pointCloud of your robot. The points will correspond to the vertices of your collision mesh (a param can allow to use the visual mesh instead)
 
-### Kinects
+#### Kinects
+![raw_kinect](https://lh6.googleusercontent.com/WJNOBLBNlCq5swH-2l9kW-UibjVai4TfBPJBcPY5o_LXxY0lTN_yizKXSOdW96OaRY0K-3Z9ixT7InQ=w1831-h851-rw)
 You need to run the calibrated Kinects you want to use and publish the their kinect_link frame. 
 You can use the ```kinect1_calib.launch``` and ``` kinect1.launch``` to help you running Kinect devices with openni_launch.
 
@@ -61,6 +63,7 @@ This node reads a certain number of pointCloud messages and writes the max and m
 Files are saved in ```data/$(arg kinect_name)/```
 
 #### Background substraction
+![background_sub](https://lh5.googleusercontent.com/tSso_aJw-2jXZpfYgI0PfWWAen4olg6r4NyS7Ftf5vBPOi8dUpDUcSJRCZflFG8WG40jMNhkZJ69OYw=w1831-h851-rw)
 ```
 roslaunch kinects_human_tracking kinect_background_sub.launch
 ```
@@ -73,13 +76,20 @@ roslaunch kinects_human_tracking kinect_merge.launch
 This node only takes the 2 kinect pointCloud, transforms them into the ```out_frame```, and adds them.
 
 #### Human detection and tracking
+![clustering](https://lh5.googleusercontent.com/BRfH0nI7UgyhrZXOojOLUSvaI_aaraIpJdmDR3nMsAyiPvtlwRyQmtJ2SsGDzoCy5RZ9ZK3XJHiC5uE=w1831-h851-rw)
+![min_dist](https://lh5.googleusercontent.com/kQ5cjCI7Ir82rqJxuD_EbZsiBz-acOUQr9w2fMC2m0oPPCo6k9CdgvEbct6loYSp8lhjB3pkx8iRxWA=w1831-h851-rw)
+![tracking](https://lh5.googleusercontent.com/bgybxmWgzpFPsZ7pNDv2tfgrf8N9qKH6kvgmSqj0EeVfkwGwzUWlhRMwa3jTdlkbsOmwMsWndGcGtjU=w1831-h851-rw)
 ```
 roslaunch kinects_human_tracking kinect_human_tracking.launch
 ```
-Clipping of the pointCloud according to regions specified in launch file (optional). Note: Removing the points of the ground is required for clustering
-Downsampling of the robot's pointCloud and the merged pointCloud
-Clustering on the merged pointCloud
-Removing the clusters that don't have the minimum height
-Find out which cluster is the closest to the robot
-Compute stats on the selected cluster(min, max, var, median, mean)
-Feed the Kalman filter with the observation and get the resulting estimate of the human's position and velocity
+- Clipping of the pointCloud according to regions specified in launch file (optional). Note: Removing the points of the ground is required for clustering
+- Downsampling of the robot's pointCloud and the merged pointCloud
+- Clustering on the merged pointCloud
+- Remove the clusters that don't have the minimum height
+- Find out which cluster is the closest to the robot
+- Compute stats on the selected cluster(min, max, var, median, mean)
+- Feed the Kalman filter with the observation and get the resulting estimate of the human's position and velocity
+
+> Author : Jimmy Da Silva <jimmy.dasilva@isir.upmc.fr> 
+
+> Contributor : Shray Bansal <shray.bansal@gmail.com> 
