@@ -1,10 +1,13 @@
 <launch>
   <arg name="kinect_name" default="kinect1"/>
+  <arg name="pc_topic" default="$(arg kinect_name)/depth_registered/points"/>
+  <arg name="bg_frames" default="30"/>
   
   <node name="background_store" pkg="kinects_human_tracking" type="kinect_background_store" output="screen">
-    <param name="bg_frames" value="10" />
+    <param name="pc_topic" value="$(arg pc_topic)" />
+    <param name="bg_frames" value="$(arg bg_frames)" />
     <param name="min_file" value="$(find kinects_human_tracking)/data/$(arg kinect_name)/min_bg.pcd" />
     <param name="max_file" value="$(find kinects_human_tracking)/data/$(arg kinect_name)/max_bg.pcd" />
-    <remap from="/pc_in" to="/$(arg kinect_name)/depth_registered/points" />
+    
   </node>
 </launch>
