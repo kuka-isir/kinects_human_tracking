@@ -102,8 +102,7 @@ roslaunch kinects_human_tracking kinect_merge.launch
 
 - *out_frame* (string, default: world)
 
-    The pointClouds are transformed into the same frame before merge. 
-    
+    The pointClouds are transformed into the same frame before merge.   
     The tracking will be done in the (x,y) plane of this frame
 
 - *out_topic_name* (string, default: kinect_both) 
@@ -124,8 +123,7 @@ roslaunch kinects_human_tracking kinect_human_tracking.launch
 
 - *clusters_topic_name* (string, default: $(arg kinect_topic_name)/clusters)
 
-    First out showing a downsampled version of the merged pointCloud.
-    
+    First out showing a downsampled version of the merged pointCloud.  
     Each clusters has a random color value.
 
 - *out_topic_name* (string, default: $(arg kinect_topic_name)/human_detection)
@@ -158,8 +156,7 @@ roslaunch kinects_human_tracking kinect_human_tracking.launch
 
 - *clipping_rules*
 
-    This one is specified with rosparam. It allows to specify a region for the tracking
-    
+    This one is specified with rosparam. It allows to specify a region for the tracking  
     Example: [z,GT,0.0,y,LT,1.0] keeps only points with z>0.0 and y<1.0
 
 Here is what happens in the pointCloud processing:
