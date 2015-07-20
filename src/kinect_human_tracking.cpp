@@ -49,7 +49,7 @@ int main(int argc, char** argv){
   
   // Initialize PointClouds
   kinects_pc_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
-  robot_pc_ = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> >(new pcl::PointCloud<pcl::PointXYZ>);
+  robot_pc_ = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> >(new pcl::PointCloud<pcl::PointXYZI>);
   human_cloud_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   
   // Reserve memory for clouds
@@ -91,7 +91,13 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   
   // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
   pcl::fromROSMsg(*human_pc_msg, *kinects_pc_);
-  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);
+  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);  
+  
+  for (int i=0; i<robot_pc_->points.size();i++)
+    cout<<"Label : "<< robot_pc_->points[i].intensity <<endl;
+  
+  sleep(10000);
+  return;
   
   // Clip pointcloud using the rules defined in params
   pc_clipping(kinects_pc_, clipping_rules_ , kinects_pc_);

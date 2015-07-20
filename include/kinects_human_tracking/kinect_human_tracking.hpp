@@ -81,7 +81,7 @@ typedef struct ClippingRule ClippingRule;
 
 // Global variables
 PointCloudSM::Ptr kinects_pc_, human_cloud_;
-pcl::PointCloud<pcl::PointXYZ>::Ptr robot_pc_;
+pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pc_;
 ros::Publisher human_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, human_state_pub_;
 double last_min_dist_, voxel_size_, kinect_noise_, process_noise_, minimum_height_, max_tracking_jump_;
 geometry_msgs::PointStamped last_human_pt_, last_robot_pt_;
