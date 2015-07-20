@@ -25,6 +25,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("minimum_height",minimum_height_);
   params_loaded *= nh_priv.getParam("max_tracking_jump",max_tracking_jump_);
   params_loaded *= nh_priv.getParam("clipping_rules",clipping_rules_bounds);
+  several_mins = true;
   
   if(!params_loaded){
     ROS_ERROR("Couldn't find all the required parameters. Closing...");
@@ -63,6 +64,7 @@ int main(int argc, char** argv){
   cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_human_pt",1);
   dist_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_robot_pt",1);
   human_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/human_state",1);
+  mins_pub_ = nh.advertise<visualization_msgs::Marker>("minimums",1);
   
   message_filters::Subscriber<PCMsg> kinect_pc_sub(nh, kinect_topic_name, 1);
   message_filters::Subscriber<PCMsg> robot_pc_sub(nh, robot_topic_name, 1);
@@ -91,13 +93,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   
   // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
   pcl::fromROSMsg(*human_pc_msg, *kinects_pc_);
-  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);  
-  
-  for (int i=0; i<robot_pc_->points.size();i++)
-    cout<<"Label : "<< robot_pc_->points[i].intensity <<endl;
-  
-  sleep(10000);
-  return;
+  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_); 
   
   // Clip pointcloud using the rules defined in params
   pc_clipping(kinects_pc_, clipping_rules_ , kinects_pc_);
@@ -108,7 +104,6 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   
   // Downsampling the two pointClouds
   pc_downsampling(kinects_pc_, voxel_size_, kinects_pc_);
-  pc_downsampling(robot_pc_, voxel_size_, robot_pc_);
   
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 2*voxel_size_ ,kinects_pc_);
@@ -146,7 +141,14 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   }
    
   // Get closest cluster to the robot
-  get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dist_, last_human_pt_, last_robot_pt_);
+  if(several_mins && (cluster_indices.size()>0) ){
+    vector<int> min_human_id_vect;
+    vector<int> min_robot_id_vect;
+    get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_, min_human_id_vect, min_robot_id_vect);
+  }  
+  else{
+    get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_[0], last_human_pt_, last_robot_pt_);
+  }
   
   if (cluster_indices.size()>0){
     // Publish human pointCloud

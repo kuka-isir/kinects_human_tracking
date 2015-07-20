@@ -16,6 +16,10 @@
 #include <pcl/common/common_headers.h>
 #include <pcl/filters/extract_indices.h>
 
+//eigen include
+#include <Eigen/Eigen>
+#include <eigen3/Eigen/Eigen>
+
 //boost includes
 #include <boost/lexical_cast.hpp>
 #include <boost/accumulators/accumulators.hpp>
@@ -28,6 +32,7 @@
 #include <boost/accumulators/statistics/median.hpp>
 #include <boost/accumulators/statistics/variance.hpp>
 #include <boost/timer.hpp>
+#include <boost/graph/graph_concepts.hpp>
 
 //ros-includes
 #include <ros/ros.h>
@@ -82,14 +87,16 @@ typedef struct ClippingRule ClippingRule;
 // Global variables
 PointCloudSM::Ptr kinects_pc_, human_cloud_;
 pcl::PointCloud<pcl::PointXYZI>::Ptr robot_pc_;
-ros::Publisher human_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, human_state_pub_;
+ros::Publisher human_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, human_state_pub_, mins_pub_;
 double last_min_dist_, voxel_size_, kinect_noise_, process_noise_, minimum_height_, max_tracking_jump_;
+std::vector<double> last_min_dists_;
 geometry_msgs::PointStamped last_human_pt_, last_robot_pt_;
 int min_cluster_size_;
 Eigen::Vector2f last_human_pos_;
 KalmanFilter kalman_;
 ros::Time last_observ_time_;
 vector<ClippingRule> clipping_rules_;
+bool several_mins;
 
 
 // Functions declaration
@@ -316,7 +323,7 @@ void pc_to_pc_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> >& pc1, boost::
   
 }
 
-/** \fn void get_closest_cluster_to_robot(pcl::PointCloud<PointT>::Ptr clustered_pc, vector<pcl::PointIndices> cluster_indices, pcl::PointCloud<PointT2>::Ptr robot_pc, pcl::PointCloud<PointT>::Ptr pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
+/** \fn void get_closest_cluster_to_robot(pcl::PointCloud<PointT>::Ptr clustered_pc, vector<pcl::PointIndices> cluster_indices, pcl::PointCloud<PointT2>::Ptr robot_pc, pcl::PointCloud<PointT>::Ptr pc_out, double mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
  *  \brief Computes the closest cluster to the robot
  *  \param[in] clustered_pc pointCloud containing the clusters
  *  \param[in] cluster_indices Indices corresponding to the clusters in the poinCloud
@@ -327,7 +334,7 @@ void pc_to_pc_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> >& pc1, boost::
  *  \param[out] pc2_pt_min Returned closest point on the second pointCloud
  */
 template<typename PointT, typename PointT2>
-void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& clustered_pc, vector<pcl::PointIndices> cluster_indices, boost::shared_ptr<pcl::PointCloud<PointT2> >& robot_pc, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
+void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& clustered_pc, vector<pcl::PointIndices> cluster_indices, boost::shared_ptr<pcl::PointCloud<PointT2> >& robot_pc, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double mini, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
   
   // Check there is at least 1 cluster and that the robot cloud is published
   if ((cluster_indices.size() < 1) || (robot_pc->points.size() < 1))
@@ -364,6 +371,120 @@ void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& c
   *pc_out = temp_pcs[min_id];
   pc1_pt_min = pc1_pt_mins[min_id];
   pc2_pt_min = pc2_pt_mins[min_id];
+  
+}
+
+/** \fn void get_closest_cluster_to_robot(pcl::PointCloud<PointT>::Ptr clustered_pc, vector<pcl::PointIndices> cluster_indices, vector<pcl::PointCloud<PointT2>::Ptr> robot_pcs, pcl::PointCloud<PointT>::Ptr pc_out, vector<double> minis, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
+ *  \brief Computes the closest cluster to the robot and returns the distance between the cluster and each robot's link
+ *  \param[in] clustered_pc pointCloud containing the clusters
+ *  \param[in] cluster_indices Indices corresponding to the clusters in the poinCloud
+ *  \param[in] robot_pcs Vector containing the clouds corresponding to the different robot's link
+ *  \param[out] pc_out Returned pointCloud containing the closest cluster to the robot
+ *  \param[out] minis Returned minimum distances between the cluster and the robot links
+ *  \param[out] pc1_pt_min Returned closest point on the first poinCloud 
+ *  \param[out] pc2_pt_min Returned closest point on the second pointCloud
+ */
+template<typename PointT, typename PointT2>
+void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& clustered_pc, vector<pcl::PointIndices> cluster_indices, boost::shared_ptr<pcl::PointCloud<PointT2> >& robot_pc, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, vector<double> minis, vector<int> min_human_id_vect, vector<int> min_robot_id_vect){
+  
+  const int nb_cluster = cluster_indices.size(), nb_links = 8;
+  
+  // Declare vector and matrices to save data 
+  Eigen::MatrixXd mins(nb_cluster, nb_links);
+  mins.fill(100000000.0);
+  Eigen::MatrixXi min_robot_id(nb_cluster, nb_links);
+  min_robot_id.fill(0);
+  Eigen::MatrixXi min_cluster_id(nb_cluster, nb_links);
+  min_cluster_id.fill(0);
+  
+  // Init marker
+  visualization_msgs::Marker mini_lines_marker;
+  geometry_msgs::Point pt;
+  mini_lines_marker.header.frame_id = robot_pc->header.frame_id;
+  mini_lines_marker.action = visualization_msgs::Marker::ADD;
+  mini_lines_marker.id = 100;
+  mini_lines_marker.scale.x = 0.01; 
+  mini_lines_marker.lifetime = ros::Duration(0.0);
+  mini_lines_marker.type = visualization_msgs::Marker::LINE_LIST;
+  mini_lines_marker.color.r = 1.0;
+  mini_lines_marker.color.a = 1.0;
+  
+  
+  // Extract the pointCloud for each link
+  vector<pcl::PointCloud<pcl::PointXYZI>::Ptr > robot_pcs;
+  robot_pcs.resize(nb_links);
+  for(int i=0;i<nb_links;i++){
+    robot_pcs[i] = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> >(new pcl::PointCloud<pcl::PointXYZI>);
+    robot_pcs[i]->header = robot_pc->header;
+  }
+  for (int i=0; i<robot_pc->points.size(); i++)
+    robot_pcs[robot_pc->points[i].intensity]->points.push_back(robot_pc->points[i]);
+  
+  // Extract all clusters
+  vector< typename pcl::PointCloud<PointT>::Ptr > pc_vect;
+  std::vector<int> vect_i;
+  for(int i=0;i<nb_cluster;i++){
+    typename pcl::PointCloud<PointT>::Ptr temp_pc(new pcl::PointCloud<PointT>);
+    vect_i.clear();
+    vect_i.push_back(i);
+    pc_extract_clusters(clustered_pc, cluster_indices, vect_i, temp_pc);
+    pc_vect.push_back(temp_pc);
+  }
+  
+  // for all clusters
+  for(int c=0;c<nb_cluster;c++){
+    // for all robot links
+    for(int l=0;l<nb_links;l++){
+      float min_dist = 100000000; 
+      float dist = 0;
+      // compute min_dist and save min_ids
+      for (size_t i = 0; i < pc_vect[c]->points.size(); ++i){
+	for (size_t j = 0; j < robot_pcs[l]->points.size(); ++j){  
+	  pcl::Vector4fMap pt1 = pc_vect[c]->points[i].getVector4fMap();
+	  pcl::Vector4fMap pt2 = robot_pcs[l]->points[j].getVector4fMap();
+	  dist = (pt2 - pt1).norm();
+	  if (dist < min_dist){
+	    min_robot_id(c,l) = j;
+	    min_cluster_id(c,l) = i;
+	    mins(c,l) = dist;
+	    min_dist = dist;
+	  }
+	}
+      }
+    }
+  }
+  
+  // Look for the minimum in matrix
+  std::ptrdiff_t idx, jdx;
+  double minOfMins = mins.minCoeff(&idx,&jdx);
+  
+  cout <<"nb clusters "<<nb_cluster <<endl;
+  cout <<"min mat : "<<endl<< mins <<endl;
+  cout <<"minOfMins : "<<minOfMins <<endl;
+
+  minis.clear();
+  for(int l=0;l<nb_links;l++){
+    Eigen::MatrixXd col = mins.col(l);
+    cout<<"col "<<l<<" :"<<endl<<col<<endl;
+    
+    std::ptrdiff_t idx, jdx;
+    minis.push_back(col.minCoeff(&idx,&jdx));
+    min_robot_id_vect.push_back(min_robot_id(idx,l));
+    min_human_id_vect.push_back(min_cluster_id(idx,l));
+    
+    pt.x = pc_vect[idx]->points[min_cluster_id(idx,l)].x;
+    pt.y = pc_vect[idx]->points[min_cluster_id(idx,l)].y;
+    pt.z = pc_vect[idx]->points[min_cluster_id(idx,l)].z;
+    mini_lines_marker.points.push_back(pt);
+    pt.x = robot_pcs[l]->points[min_robot_id(idx,l)].x;
+    pt.y = robot_pcs[l]->points[min_robot_id(idx,l)].y;
+    pt.z = robot_pcs[l]->points[min_robot_id(idx,l)].z;
+    mini_lines_marker.points.push_back(pt);
+  }
+  
+  *pc_out = *pc_vect[idx];
+  
+  mins_pub_.publish(mini_lines_marker);
   
 }
 #endif
