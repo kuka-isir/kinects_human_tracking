@@ -104,6 +104,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   
   // Downsampling the two pointClouds
   pc_downsampling(kinects_pc_, voxel_size_, kinects_pc_);
+  pc_downsampling(robot_pc_, voxel_size_, robot_pc_);
   
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 2*voxel_size_ ,kinects_pc_);

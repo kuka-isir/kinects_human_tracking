@@ -457,15 +457,10 @@ void get_closest_cluster_to_robot(boost::shared_ptr<pcl::PointCloud<PointT> >& c
   // Look for the minimum in matrix
   std::ptrdiff_t idx, jdx;
   double minOfMins = mins.minCoeff(&idx,&jdx);
-  
-  cout <<"nb clusters "<<nb_cluster <<endl;
-  cout <<"min mat : "<<endl<< mins <<endl;
-  cout <<"minOfMins : "<<minOfMins <<endl;
 
   minis.clear();
   for(int l=0;l<nb_links;l++){
     Eigen::MatrixXd col = mins.col(l);
-    cout<<"col "<<l<<" :"<<endl<<col<<endl;
     
     std::ptrdiff_t idx, jdx;
     minis.push_back(col.minCoeff(&idx,&jdx));
