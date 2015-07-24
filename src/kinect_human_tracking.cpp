@@ -76,7 +76,7 @@ int main(int argc, char** argv){
   x_k1.fill(0.0);
   Eigen::Matrix<float, 6, 6> init_cov;
   init_cov.fill(0.0);
-  kalman_.init(Eigen::Vector2f(kinect_noise_, process_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1, init_cov);
+  kalman_.init(Eigen::Vector2f(kinect_noise_, kinect_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1, init_cov);
   
   // Initializing the human's position at the origin
   last_human_pos_ = Eigen::Vector2f(0.0, 0.0);
