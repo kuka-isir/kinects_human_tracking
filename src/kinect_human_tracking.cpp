@@ -143,7 +143,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
    
   // Get closest cluster to the robot
   if (cluster_indices.size()>0){
-    if(several_mins){
+    if(several_mins_){
       vector<int> min_human_id_vect;
       vector<int> min_robot_id_vect;
       get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_, min_human_id_vect, min_robot_id_vect);
