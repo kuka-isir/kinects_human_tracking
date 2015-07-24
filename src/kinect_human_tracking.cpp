@@ -172,7 +172,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     
     // If the new observation is too far from the previous one, reinitialize
     if ( (last_human_pos_-obs).norm() > max_tracking_jump_){
-      kalman_.init(Eigen::Vector2f(kinect_noise_, process_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1);
+      kalman_.init(Eigen::Vector2f(kinect_noise_, kinect_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1);
       ROS_INFO("New human pose to far. Reinitializing tracking!");
     }
   
