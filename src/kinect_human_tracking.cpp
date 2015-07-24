@@ -25,7 +25,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("minimum_height",minimum_height_);
   params_loaded *= nh_priv.getParam("max_tracking_jump",max_tracking_jump_);
   params_loaded *= nh_priv.getParam("clipping_rules",clipping_rules_bounds);
-  several_mins = true;
+  params_loaded *= nh_priv.getParam("several_mins",several_mins_);
   
   if(!params_loaded){
     ROS_ERROR("Couldn't find all the required parameters. Closing...");

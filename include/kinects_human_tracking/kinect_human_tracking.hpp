@@ -96,7 +96,7 @@ Eigen::Vector2f last_human_pos_;
 KalmanFilter kalman_;
 ros::Time last_observ_time_;
 vector<ClippingRule> clipping_rules_;
-bool several_mins;
+bool several_mins_;
 
 
 // Functions declaration

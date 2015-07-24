@@ -10,6 +10,7 @@
   <arg name="kinect_noise" default="0.01" />
   <arg name="minimum_height" default="0.2" />
   <arg name="max_tracking_jump" default="0.3" />
+  <arg name="several_mins" default="true" />
   
 
   <node name="kinect_human_tracking" pkg="kinects_human_tracking" type="kinect_human_tracking" output="screen">
@@ -24,6 +25,7 @@
     <param name="minimum_height" value="$(arg minimum_height)" />
     <param name="max_tracking_jump" value="$(arg max_tracking_jump)" />
     <rosparam param="clipping_rules">[z, GT, 0.0]</rosparam>
+    <param name="several_mins" value="$(arg several_mins)" />
   </node>
 
 </launch>
