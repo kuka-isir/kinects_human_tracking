@@ -127,7 +127,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     std::vector<double> cluster_heights; 
     vector<ClusterStats> stats = get_clusters_stats (kinects_pc_ , cluster_indices);
     for(int i=0; i<cluster_indices.size();i++){
-      std::string tmp = boost::lexical_cast<std::string>(stats[i].max-stats[i].min);
+      std::string tmp = boost::lexical_cast<std::string>(stats[i].max(2)-stats[i].min(2));
       double cluster_height = (double)atof(tmp.c_str());
       cluster_heights.push_back(cluster_height);
     }
@@ -142,16 +142,15 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   }
    
   // Get closest cluster to the robot
-  if(several_mins && (cluster_indices.size()>0) ){
-    vector<int> min_human_id_vect;
-    vector<int> min_robot_id_vect;
-    get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_, min_human_id_vect, min_robot_id_vect);
-  }  
-  else{
-    get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_[0], last_human_pt_, last_robot_pt_);
-  }
-  
   if (cluster_indices.size()>0){
+    if(several_mins){
+      vector<int> min_human_id_vect;
+      vector<int> min_robot_id_vect;
+      get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_, min_human_id_vect, min_robot_id_vect);
+    }  
+    else{
+      get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_[0], last_human_pt_, last_robot_pt_);
+    }
     // Publish human pointCloud
     human_pc_pub_.publish(*human_cloud_);
     
