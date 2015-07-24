@@ -7,6 +7,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -29,6 +30,7 @@ public:
     nh_priv.getParam("max_file", max_file);
     nh_priv.getParam("topic_in", topic_in);
     nh_priv.getParam("topic_out", topic_out);
+    nh_priv.getParam("voxel_size", voxel_size_);
 
     if(pcl::io::loadPCDFile<PXYZ> (min_file, pc_min_) == -1 )
       ROS_ERROR_STREAM("Min File not found. Path = " << min_file); 
@@ -38,7 +40,8 @@ public:
     ROS_INFO("Loaded Min/Max files");
     pc_sub_ = nh.subscribe<PCRGB>(topic_in, 1, &BackgroundSubtract::recvPCCallback, this);
     pc_pub_ = nh.advertise<PCRGB>(topic_out, 1);
-    bg_removed_.reserve(10000);
+    bg_removed_ = boost::shared_ptr<PCRGB>(new PCRGB);
+    bg_removed_->reserve(10000);
   }
   
 protected:
@@ -51,7 +54,8 @@ protected:
   ros::Subscriber pc_sub_;
   ros::Publisher pc_pub_;
   std::set<float> possible_z;
-  PCRGB bg_removed_;
+  PCRGB::Ptr bg_removed_;
+  double voxel_size_;
 
 };
 
@@ -68,10 +72,15 @@ void BackgroundSubtract::recvPCCallback(const PCRGB::ConstPtr& msg){
   extract_filter.setNegative(false);
   extract_filter.setIndices(inds);
   extract_filter.setInputCloud(pc_in_);
-  extract_filter.filter(bg_removed_);
-
+  extract_filter.filter(*bg_removed_);
+  
+  pcl::VoxelGrid<PRGB> vox_grid;
+  vox_grid.setInputCloud(bg_removed_);
+  vox_grid.setLeafSize(voxel_size_,voxel_size_,voxel_size_);
+  vox_grid.filter(*bg_removed_);
+  
   //publish subbed point cloud
-  pc_pub_.publish(bg_removed_); // PC no longer organized
+  pc_pub_.publish(*bg_removed_); // PC no longer organized
 }
 
 void BackgroundSubtract::backgroundSub(const PCRGB::ConstPtr& pc, pcl::PointIndices::Ptr &inds){
