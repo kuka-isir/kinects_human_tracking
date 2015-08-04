@@ -1,0 +1,27 @@
+<launch>
+
+  <arg name="kinect_topic_name" default="kinect_both"/>
+  <arg name="clusters_topic_name" default="$(arg kinect_topic_name)/clusters" />
+  <arg name="out_topic_name" default="$(arg kinect_topic_name)/human_detection" />
+  <arg name="voxel_size" default="0.02" />
+  <arg name="min_cluster_size" default="100" />
+  <arg name="process_noise" default="0.1" />
+  <arg name="kinect_noise" default="0.01" />
+  <arg name="minimum_height" default="0" />
+  <arg name="max_tracking_jump" default="0.3" />
+  
+
+  <node name="closest_pt_tracking" pkg="kinects_human_tracking" type="closest_pt_tracking" output="screen">
+    <param name="kinect_topic_name" value="$(arg kinect_topic_name)" />
+    <param name="clusters_topic_name" value="$(arg clusters_topic_name)" />
+    <param name="out_topic_name" value="$(arg out_topic_name)" />
+    <param name="voxel_size" value="$(arg voxel_size)" />
+    <param name="min_cluster_size" value="$(arg min_cluster_size)" />
+    <param name="process_noise" value="$(arg process_noise)" />
+    <param name="kinect_noise" value="$(arg kinect_noise)" />
+    <param name="minimum_height" value="$(arg minimum_height)" />
+    <param name="max_tracking_jump" value="$(arg max_tracking_jump)" />
+    <rosparam param="clipping_rules">[z, GT, 0.0]</rosparam>
+  </node>
+
+</launch>
