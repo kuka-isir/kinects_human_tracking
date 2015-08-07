@@ -100,7 +100,7 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
   pc_downsampling(kinects_pc_, voxel_size_, kinects_pc_);
   
   // Clustering
-  std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 2*voxel_size_ ,kinects_pc_);
+  std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, min_cluster_size_, 2*voxel_size_ ,kinects_pc_);
   
   // Gives each cluster a random color
   for(int i=0; i<cluster_indices.size();i++){
@@ -136,7 +136,7 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
    
   // Get closest cluster to the robot
   if (cluster_indices.size()>0){
-    get_closest_pt_to_frame(kinects_pc_, cluster_indices, "ati_link", cluster_cloud_, last_min_dist_, last_cluster_pt_);
+    get_closest_cluster_to_frame(kinects_pc_, cluster_indices, tf_listener_, "ati_link", cluster_cloud_, last_min_dist_, last_cluster_pt_);
     
     // Publish cluster's' pointCloud
     cluster_pc_pub_.publish(*cluster_cloud_);
