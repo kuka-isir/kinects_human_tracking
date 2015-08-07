@@ -44,14 +44,20 @@
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PointStamped.h>
+#include <std_msgs/Float32.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_ros/point_cloud.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <kinects_human_tracking/kalmanFilter3Pos3Vel.hpp>
+
+// defining pi
+#ifndef M_PI
+#define M_PI 3.141592653589793
+#endif
 /**
-   Subscribe to a pointCloud and figure if there is 
-   a human inside. Then track him using a Kalman filter
+   Subscribe to a pointCloud and track the closest
+   point to the robot's end-effector
  */
 
 using namespace std;
@@ -86,14 +92,14 @@ typedef struct ClippingRule ClippingRule;
 
 // Global variables
 PointCloudSM::Ptr kinects_pc_, cluster_cloud_;
-ros::Publisher cluster_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, cluster_state_pub_, mins_pub_;
+ros::Publisher cluster_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, cluster_state_pub_, mins_pub_, min_pub_,vel_pub_;
 double last_min_dist_, voxel_size_, kinect_noise_, process_noise_, minimum_height_, max_tracking_jump_;
 std::vector<double> last_min_dists_;
 geometry_msgs::PointStamped last_cluster_pt_;
 int min_cluster_size_;
 Eigen::Vector3f last_pos_;
 KalmanFilter kalman_;
-ros::Time last_observ_time_;
+ros::WallTime last_observ_time_;
 vector<ClippingRule> clipping_rules_;
 tf::TransformListener* tf_listener_;
 
@@ -126,7 +132,7 @@ void pc_downsampling(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, double&
   
   pcl::VoxelGrid<PointT> vox_grid;
   vox_grid.setInputCloud(pc_in);
-  vox_grid.setLeafSize(voxel_size_,voxel_size_,voxel_size_);
+  vox_grid.setLeafSize(voxel_size,voxel_size,voxel_size);
   vox_grid.filter(*pc_out);
   
 }
@@ -184,10 +190,14 @@ vector<pcl::PointIndices> pc_clustering(boost::shared_ptr<pcl::PointCloud<PointT
   
   pcl::copyPointCloud(*pc_in, *clustered_pc);
   
+  std::vector<pcl::PointIndices> cluster_indices;
+  if (pc_in->points.size()==0){
+    return cluster_indices;
+  }
+  
   typename pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);
   tree->setInputCloud (pc_in);
   
-  std::vector<pcl::PointIndices> cluster_indices;
   typename pcl::EuclideanClusterExtraction<PointT> ec;
   ec.setClusterTolerance (cluster_tolerance);
   ec.setMinClusterSize (min_cluster_size_);
@@ -196,7 +206,6 @@ vector<pcl::PointIndices> pc_clustering(boost::shared_ptr<pcl::PointCloud<PointT
   ec.extract (cluster_indices);
   
   return cluster_indices;
-  
 }
 
 /** \fn void pc_extract_clusters(pcl::PointCloud<PointT>::Ptr pc_in, vector<pcl::PointIndices> cluster_indices, vector<int> cluster_ids, pcl::PointCloud<PointT2>::Ptr pc_out)

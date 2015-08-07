@@ -1,7 +1,7 @@
 #include <kinects_human_tracking/closest_pt_tracking.hpp>
 /**
    Subscribe to a pointCloud and track the closest
-   pt to the robot's end-effector
+   point to the robot's end-effector
  */
 
 int main(int argc, char** argv){
@@ -61,7 +61,8 @@ int main(int argc, char** argv){
   cluster_pc_pub_ = nh.advertise<PointCloudSM>(out_topic_name, 1);
   cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_tracking_pt",1);
   cluster_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/tracking_state",1);
-  mins_pub_ = nh.advertise<visualization_msgs::Marker>("minimums",1);
+  min_pub_ = nh.advertise<std_msgs::Float32>("minimum_distance",1);
+  vel_pub_ = nh.advertise<geometry_msgs::Twist>("velocity",1);
   ros::Subscriber kinect_pc_sub = nh.subscribe<PCMsg>(kinect_topic_name, 1, callback);
   
   // Initialize Kalman filter
@@ -76,7 +77,7 @@ int main(int argc, char** argv){
   
   ROS_INFO("Tracking ready !");
   
-  last_observ_time_ = ros::Time(0.0);
+  last_observ_time_ = ros::WallTime(0.0);
   
   
   ros::spin();
@@ -165,10 +166,11 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     if (last_observ_time_.sec == 0)
       delta_t = -1;
     else
-      delta_t = ros::Time::now().sec - last_observ_time_.sec + (ros::Time::now().nsec - last_observ_time_.nsec)*pow(0.1,9);
+      delta_t = (ros::WallTime::now() - last_observ_time_).toSec();
+    
     Eigen::Matrix<float, 9, 1> est;
     kalman_.estimate(obs, delta_t, est); 
-    last_observ_time_ = ros::Time::now();
+    last_observ_time_ = ros::WallTime::now();
     
     // Save new estimated pose
     last_pos_(0) = est(0);
@@ -177,6 +179,16 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     
     // Visualize pose and speed
     visualize_state(est, cluster_state_pub_);  
+    
+    // Publish minimum distance and speed
+    std_msgs::Float32 float32_msg;
+    float32_msg.data = last_min_dist_;
+    min_pub_.publish(std_msgs::Float32(float32_msg));
+    geometry_msgs::Twist twist;
+    twist.linear.x = est(3);
+    twist.linear.y = est(4);
+    twist.linear.z = est(5);
+    vel_pub_.publish(twist);
   }
 }
 
@@ -192,7 +204,7 @@ void visualize_state (Eigen::Matrix<float, 9, 1> state, ros::Publisher state_pub
   
   // Marker for velocity on x
   velx_marker.header.frame_id = "world";
-  velx_marker.header.stamp = last_observ_time_;
+  velx_marker.header.stamp = ros::Time::now();
   velx_marker.id = 200;
   velx_marker.ns = "velx";
   velx_marker.type = visualization_msgs::Marker::ARROW;
@@ -209,18 +221,8 @@ void visualize_state (Eigen::Matrix<float, 9, 1> state, ros::Publisher state_pub
   velx_marker.color.a = 1.0f;
   velx_marker.lifetime = ros::Duration();
 
-  if (state(3)<=0){
-//     axis_vector = tf::Vector3(state(3),0,0);
-//     right_vector = axis_vector.cross(x_axis);
-//     right_vector.normalize();
-//     quat = tf::Quaternion(right_vector, -1.0*acos(axis_vector.dot(x_axis)));
-//     quat.normalize();
-//     velx_marker.pose.orientation.x = quat.getX(); 
-//     velx_marker.pose.orientation.y = quat.getY();
-//     velx_marker.pose.orientation.z = quat.getZ();
-//     velx_marker.pose.orientation.w = quat.getW();
-    
-    quat.setEuler(3.14, 0, 0);
+  if (state(3)<=0){    
+    quat.setEuler(M_PI, 0, 0);
     velx_marker.pose.orientation.x = quat.getX(); 
     velx_marker.pose.orientation.y = quat.getY();
     velx_marker.pose.orientation.z = quat.getZ();
@@ -272,7 +274,6 @@ void visualize_state (Eigen::Matrix<float, 9, 1> state, ros::Publisher state_pub
   velz_marker.pose.orientation.w = quat.getW();
   
   markers_arr.markers.push_back(velz_marker);
-  
   
   // Marker for global velocity
   vel_marker = velz_marker;
