@@ -107,7 +107,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   pc_downsampling(robot_pc_, voxel_size_, robot_pc_);
   
   // Clustering
-  std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 2*voxel_size_ ,kinects_pc_);
+  std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 100, 2*voxel_size_ ,kinects_pc_);
   
   // Gives each cluster a random color
   for(int i=0; i<cluster_indices.size();i++){
@@ -149,17 +149,19 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
       get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_, min_human_id_vect, min_robot_id_vect);
     }  
     else{
-      get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_[0], last_human_pt_, last_robot_pt_);
+      get_closest_cluster_to_pc(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_[0], last_human_pt_, last_robot_pt_);
     }
     // Publish human pointCloud
     human_pc_pub_.publish(*human_cloud_);
     
-    // Publish minimum points 
-    cloud_mini_pt_pub_.publish<geometry_msgs::PointStamped>(last_human_pt_);
-    dist_pt_pub_.publish<geometry_msgs::PointStamped>(last_robot_pt_);
+    if(!several_mins_){
+      // Publish minimum points 
+      cloud_mini_pt_pub_.publish<geometry_msgs::PointStamped>(last_human_pt_);
+      dist_pt_pub_.publish<geometry_msgs::PointStamped>(last_robot_pt_);
+    }
     
     // Get stats on human's pointCloud
-    ClusterStats human_stats = get_cluster_stats(human_cloud_);
+    ClusterStats human_stats = get_pc_stats(human_cloud_);
     
     // Get pose observation from the stats
     Eigen::Vector2f obs;

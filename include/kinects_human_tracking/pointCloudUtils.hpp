@@ -48,6 +48,8 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_ros/transforms.h>
 #include <pcl_ros/point_cloud.h>
+#include <sensor_msgs/point_cloud_conversion.h>
+#include <sensor_msgs/PointCloud2.h>
 
 typedef Eigen::Vector3f ClusterPoint;
 
@@ -255,7 +257,7 @@ ClusterStats get_pc_stats (boost::shared_ptr<pcl::PointCloud<PointT> > pc){
  *  \param[out] pc1_pt_min Returned closest point in the pointCloud to target frame
  */
 template<typename PointT> 
-void pc_to_frame_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> >& pc, tf::StampedTransform transform, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
+void pc_to_frame_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> > pc, tf::StampedTransform transform, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
   
   Eigen::Vector4f pt2(transform.getOrigin().getX(), transform.getOrigin().getY(), transform.getOrigin().getZ(), 1.0);
   
@@ -307,7 +309,7 @@ void pc_to_frame_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> > pc, tf::Tr
  *  \param[out] pc_pt_min Returned closest point on the first pointCloud 
  */
 template<typename PointT>
-void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, std::vector<pcl::PointIndices> cluster_indices, tf::StampedTransform transform, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
+void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> > pc_in, std::vector<pcl::PointIndices> cluster_indices, tf::StampedTransform transform, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
    
   // Check there is at least 1 cluster
   if ((cluster_indices.size() < 1))
@@ -355,7 +357,7 @@ void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> >& p
  *  \param[out] pc_pt_min Returned closest point on the first pointCloud 
  */
 template<typename PointT>
-void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> >& pc_in, std::vector<pcl::PointIndices> cluster_indices, tf::TransformListener* tf_listener, std::string frame_id, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
+void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> > pc_in, std::vector<pcl::PointIndices> cluster_indices, tf::TransformListener* tf_listener, std::string frame_id, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
    
   // Check there is at least 1 cluster
   if ((cluster_indices.size() < 1))
@@ -368,4 +370,96 @@ void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> >& p
   get_closest_cluster_to_frame(pc_in, cluster_indices, transform, pc_out, min_dist, pc_pt_min);
   
 }
+
+/** \fn void pc_to_pc_min_dist(pcl::PointCloud<PointT>::Ptr pc1, pcl::PointCloud<PointT2>::Ptr pc2, double& min_dist, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min)
+ *  \brief Computes the minimum distance between two pointClouds
+ *  \param[in] pc1 First pointCloud
+ *  \param[in] pc2 Second pointCloud
+ *  \param[out] min_dist Returned minimum distance value
+ *  \param[out] pc1_pt_min Returned closest point on the first pointCloud 
+ *  \param[out] pc2_pt_min Returned closest point on the second pointCloud
+ */
+template<typename PointT, typename PointT2> 
+void pc_to_pc_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> > pc1, boost::shared_ptr<pcl::PointCloud<PointT2> > pc2, double& min_dist, geometry_msgs::PointStamped& pc1_pt_min, geometry_msgs::PointStamped& pc2_pt_min){
+  
+  min_dist = 100000000;
+  float dist = 0; 
+  int min_idx = 0;
+  int min_jdx = 0;
+  for (size_t i = 0; i < pc1->points.size (); ++i){
+    for (size_t j = 0; j < pc2->points.size (); ++j){  
+      pcl::Vector4fMap pt1 = pc1->points[i].getVector4fMap();
+      pcl::Vector4fMap pt2 = pc2->points[j].getVector4fMap();
+      dist = (pt2 - pt1).norm ();
+      if (dist < min_dist){
+	min_idx = i;
+	min_jdx = j;
+	min_dist = dist;
+      }
+    }
+  }
+  
+  pc1_pt_min.header.frame_id = pc1->header.frame_id;
+  pc1_pt_min.point.x = pc1->points[min_idx].x;
+  pc1_pt_min.point.y = pc1->points[min_idx].y;
+  pc1_pt_min.point.z = pc1->points[min_idx].z; 
+  
+  pc2_pt_min.header.frame_id = pc2->header.frame_id;
+  pc2_pt_min.point.x = pc2->points[min_jdx].x;
+  pc2_pt_min.point.y = pc2->points[min_jdx].y;
+  pc2_pt_min.point.z = pc2->points[min_jdx].z;
+  
+}
+
+/** \fn void get_closest_cluster_to_pc(pcl::PointCloud<PointT>::Ptr clustered_pc, vector<pcl::PointIndices> cluster_indices, pcl::PointCloud<PointT2>::Ptr pc_in, pcl::PointCloud<PointT>::Ptr pc_out, double mini, geometry_msgs::PointStamped& cluster_pt_min, geometry_msgs::PointStamped& pc_pt_min)
+ *  \brief Computes the closest cluster to a pointCloud
+ *  \param[in] clustered_pc pointCloud containing the clusters
+ *  \param[in] cluster_indices Indices corresponding to the clusters in the poinCloud
+ *  \param[in] pc_in Robot's pointCloud
+ *  \param[out] pc_out Returned pointCloud containing the closest cluster to the pointcloud
+ *  \param[out] mini Returned minimum distance between the cluster and the poitCloud
+ *  \param[out] cluster_pt_min Returned closest point in the cluster
+ *  \param[out] pc_pt_min Returned closest point in the pointCloud
+ */
+template<typename PointT, typename PointT2>
+void get_closest_cluster_to_pc(boost::shared_ptr<pcl::PointCloud<PointT> > clustered_pc, std::vector<pcl::PointIndices> cluster_indices, boost::shared_ptr<pcl::PointCloud<PointT2> > pc_in, boost::shared_ptr<pcl::PointCloud<PointT> >& pc_out, double mini, geometry_msgs::PointStamped& cluster_pt_min, geometry_msgs::PointStamped& pc_pt_min){
+  
+  // Check there is at least 1 cluster and that the robot cloud is published
+  if ((cluster_indices.size() < 1) || (pc_in->points.size() < 1))
+    return;
+  
+  double min_dist;
+  std::vector<double> min_dists;
+  std::vector<int> cluster_id;
+  typename pcl::PointCloud<PointT>::Ptr temp_pc(new pcl::PointCloud<PointT>);
+  typename std::vector< pcl::PointCloud<PointT> > temp_pcs;
+  std::vector< geometry_msgs::PointStamped> cluster_pt_mins, pc_pt_mins;
+  for(int i=0; i<cluster_indices.size();i++){
+    cluster_id.clear();
+    cluster_id.push_back(i);
+    
+    pc_extract_clusters(clustered_pc, cluster_indices, cluster_id, temp_pc);
+    pc_to_pc_min_dist(temp_pc, pc_in, min_dist, cluster_pt_min, pc_pt_min);
+    
+    min_dists.push_back(min_dist);
+    temp_pcs.push_back(*temp_pc);
+    cluster_pt_mins.push_back(cluster_pt_min);
+    pc_pt_mins.push_back(pc_pt_min);
+  }
+  
+  mini = min_dists[0];
+  int min_id = 0;
+  for(int i=0; i<min_dists.size();i++){
+    if(min_dists[i] < mini){
+      mini = min_dists[i];
+      min_id = i;
+    } 
+  }
+  
+  *pc_out = temp_pcs[min_id];
+  cluster_pt_min = cluster_pt_mins[min_id];
+  pc_pt_min = pc_pt_mins[min_id];
+  
+}
+
 #endif
