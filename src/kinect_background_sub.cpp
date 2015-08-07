@@ -90,7 +90,7 @@ void BackgroundSubtract::backgroundSub(const PCRGB::ConstPtr& pc, pcl::PointIndi
     float p_max_z = pc_max_[i].z;
     float pt_z = pc->at(i).z;
 
-    if(!isnan(pt_z) && (isnan(p_min_z) || (pt_z < p_min_z)))
+    if(!isnan(pt_z) && (isnan(p_min_z) || isinf(p_min_z) || (pt_z < p_min_z)))
       inds->indices.push_back(i);
     //if(isnan(pt_z) && ((isnan(p_max_z) || pt_z > p_max_z) || (isnan(p_min_z) || pt_z < p_min_z)))
   }

@@ -1,21 +1,18 @@
 <launch>
 
   <arg name="kinect_topic_name" default="kinect_both"/>
-  <arg name="robot_topic_name" default="robot_model_to_pointcloud/robot_cloud2" />
   <arg name="clusters_topic_name" default="$(arg kinect_topic_name)/clusters" />
   <arg name="out_topic_name" default="$(arg kinect_topic_name)/human_detection" />
   <arg name="voxel_size" default="0.02" />
   <arg name="min_cluster_size" default="100" />
   <arg name="process_noise" default="0.1" />
   <arg name="kinect_noise" default="0.01" />
-  <arg name="minimum_height" default="0.2" />
+  <arg name="minimum_height" default="0" />
   <arg name="max_tracking_jump" default="0.3" />
-  <arg name="several_mins" default="true" />
   
 
-  <node name="kinect_human_tracking" pkg="kinects_human_tracking" type="kinect_human_tracking" output="screen">
+  <node name="closest_pt_tracking" pkg="kinects_human_tracking" type="closest_pt_tracking" output="screen">
     <param name="kinect_topic_name" value="$(arg kinect_topic_name)" />
-    <param name="robot_topic_name" value="$(arg robot_topic_name)" />
     <param name="clusters_topic_name" value="$(arg clusters_topic_name)" />
     <param name="out_topic_name" value="$(arg out_topic_name)" />
     <param name="voxel_size" value="$(arg voxel_size)" />
@@ -25,7 +22,6 @@
     <param name="minimum_height" value="$(arg minimum_height)" />
     <param name="max_tracking_jump" value="$(arg max_tracking_jump)" />
     <rosparam param="clipping_rules">[z, GT, 0.0]</rosparam>
-    <param name="several_mins" value="$(arg several_mins)" />
   </node>
 
 </launch>

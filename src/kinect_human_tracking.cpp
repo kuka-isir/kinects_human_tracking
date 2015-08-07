@@ -25,6 +25,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("minimum_height",minimum_height_);
   params_loaded *= nh_priv.getParam("max_tracking_jump",max_tracking_jump_);
   params_loaded *= nh_priv.getParam("clipping_rules",clipping_rules_bounds);
+  params_loaded *= nh_priv.getParam("several_mins",several_mins_);
   
   if(!params_loaded){
     ROS_ERROR("Couldn't find all the required parameters. Closing...");
@@ -49,7 +50,7 @@ int main(int argc, char** argv){
   
   // Initialize PointClouds
   kinects_pc_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
-  robot_pc_ = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ> >(new pcl::PointCloud<pcl::PointXYZ>);
+  robot_pc_ = boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI> >(new pcl::PointCloud<pcl::PointXYZI>);
   human_cloud_ = boost::shared_ptr<PointCloudSM>(new PointCloudSM);
   
   // Reserve memory for clouds
@@ -63,6 +64,7 @@ int main(int argc, char** argv){
   cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_human_pt",1);
   dist_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_robot_pt",1);
   human_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/human_state",1);
+  mins_pub_ = nh.advertise<visualization_msgs::Marker>("minimums",1);
   
   message_filters::Subscriber<PCMsg> kinect_pc_sub(nh, kinect_topic_name, 1);
   message_filters::Subscriber<PCMsg> robot_pc_sub(nh, robot_topic_name, 1);
@@ -74,7 +76,7 @@ int main(int argc, char** argv){
   x_k1.fill(0.0);
   Eigen::Matrix<float, 6, 6> init_cov;
   init_cov.fill(0.0);
-  kalman_.init(Eigen::Vector2f(kinect_noise_, process_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1, init_cov);
+  kalman_.init(Eigen::Vector2f(kinect_noise_, kinect_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1, init_cov);
   
   // Initializing the human's position at the origin
   last_human_pos_ = Eigen::Vector2f(0.0, 0.0);
@@ -91,7 +93,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   
   // Conversion from sensor_msgs::PointCloud2 to pcl::PointCloud
   pcl::fromROSMsg(*human_pc_msg, *kinects_pc_);
-  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_);
+  pcl::fromROSMsg(*robot_pc_msg, *robot_pc_); 
   
   // Clip pointcloud using the rules defined in params
   pc_clipping(kinects_pc_, clipping_rules_ , kinects_pc_);
@@ -105,7 +107,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   pc_downsampling(robot_pc_, voxel_size_, robot_pc_);
   
   // Clustering
-  std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 2*voxel_size_ ,kinects_pc_);
+  std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, 100, 2*voxel_size_ ,kinects_pc_);
   
   // Gives each cluster a random color
   for(int i=0; i<cluster_indices.size();i++){
@@ -125,7 +127,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     std::vector<double> cluster_heights; 
     vector<ClusterStats> stats = get_clusters_stats (kinects_pc_ , cluster_indices);
     for(int i=0; i<cluster_indices.size();i++){
-      std::string tmp = boost::lexical_cast<std::string>(stats[i].max-stats[i].min);
+      std::string tmp = boost::lexical_cast<std::string>(stats[i].max(2)-stats[i].min(2));
       double cluster_height = (double)atof(tmp.c_str());
       cluster_heights.push_back(cluster_height);
     }
@@ -140,18 +142,26 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
   }
    
   // Get closest cluster to the robot
-  get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dist_, last_human_pt_, last_robot_pt_);
-  
   if (cluster_indices.size()>0){
+    if(several_mins_){
+      vector<int> min_human_id_vect;
+      vector<int> min_robot_id_vect;
+      get_closest_cluster_to_robot(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_, min_human_id_vect, min_robot_id_vect);
+    }  
+    else{
+      get_closest_cluster_to_pc(kinects_pc_, cluster_indices, robot_pc_, human_cloud_, last_min_dists_[0], last_human_pt_, last_robot_pt_);
+    }
     // Publish human pointCloud
     human_pc_pub_.publish(*human_cloud_);
     
-    // Publish minimum points 
-    cloud_mini_pt_pub_.publish<geometry_msgs::PointStamped>(last_human_pt_);
-    dist_pt_pub_.publish<geometry_msgs::PointStamped>(last_robot_pt_);
+    if(!several_mins_){
+      // Publish minimum points 
+      cloud_mini_pt_pub_.publish<geometry_msgs::PointStamped>(last_human_pt_);
+      dist_pt_pub_.publish<geometry_msgs::PointStamped>(last_robot_pt_);
+    }
     
     // Get stats on human's pointCloud
-    ClusterStats human_stats = get_cluster_stats(human_cloud_);
+    ClusterStats human_stats = get_pc_stats(human_cloud_);
     
     // Get pose observation from the stats
     Eigen::Vector2f obs;
@@ -164,7 +174,7 @@ void callback(const PCMsg::ConstPtr& human_pc_msg, const PCMsg::ConstPtr& robot_
     
     // If the new observation is too far from the previous one, reinitialize
     if ( (last_human_pos_-obs).norm() > max_tracking_jump_){
-      kalman_.init(Eigen::Vector2f(kinect_noise_, process_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1);
+      kalman_.init(Eigen::Vector2f(kinect_noise_, kinect_noise_), Eigen::Vector2f(process_noise_ ,process_noise_), -1, x_k1);
       ROS_INFO("New human pose to far. Reinitializing tracking!");
     }
   
