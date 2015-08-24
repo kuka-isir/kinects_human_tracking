@@ -152,14 +152,16 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     obs(2) = last_cluster_pt_.point.z;   
     
     // If the new observation is too far from the previous one, reinitialize
-    if ( (last_pos_-obs).norm() > max_tracking_jump_){
-      Eigen::Matrix<float, 9, 1>  x_k1;
-      x_k1.fill(0.);
-      x_k1(0,0) = obs(0);
-      x_k1(1,0) = obs(1);
-      x_k1(2,0) = obs(2);
-      kalman_.init(Eigen::Vector3f(kinect_noise_, kinect_noise_, kinect_noise_), Eigen::Vector3f(process_noise_ ,process_noise_, process_noise_), -1, x_k1);
-      ROS_INFO("New pose too far. Reinitializing tracking!");
+    if(max_tracking_jump_>0){
+      if ( (last_pos_-obs).norm() > max_tracking_jump_){
+	Eigen::Matrix<float, 9, 1>  x_k1;
+	x_k1.fill(0.);
+	x_k1(0,0) = obs(0);
+	x_k1(1,0) = obs(1);
+	x_k1(2,0) = obs(2);
+	kalman_.init(Eigen::Vector3f(kinect_noise_, kinect_noise_, kinect_noise_), Eigen::Vector3f(process_noise_ ,process_noise_, process_noise_), -1, x_k1);
+	ROS_INFO("New pose too far. Reinitializing tracking!");
+      }
     }
   
     // Feed the Kalman filter with the observation and get back the estimated state
