@@ -22,6 +22,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("voxel_size",voxel_size_);
   params_loaded *= nh_priv.getParam("min_cluster_size",min_cluster_size_);
   params_loaded *= nh_priv.getParam("kinect_noise",kinect_noise_);
+  params_loaded *= nh_priv.getParam("kinect_noise_z",kinect_noise_z_);
   params_loaded *= nh_priv.getParam("process_noise",process_noise_);
   params_loaded *= nh_priv.getParam("minimum_height",minimum_height_);
   params_loaded *= nh_priv.getParam("max_tracking_jump",max_tracking_jump_);
@@ -72,14 +73,14 @@ int main(int argc, char** argv){
   x_k1.fill(0.0);
   Eigen::Matrix<float, 9, 9> init_cov;
   init_cov.fill(0.0);
-  kalman_.init(Eigen::Vector3f(kinect_noise_, kinect_noise_, kinect_noise_), Eigen::Vector3f(process_noise_ ,process_noise_,process_noise_), -1, x_k1, init_cov);
+  kalman_.init(Eigen::Vector3f(kinect_noise_, kinect_noise_, kinect_noise_z_), Eigen::Vector3f(process_noise_ ,process_noise_,process_noise_), -1, x_k1, init_cov);
   
   // Initializing the tracking position at the origin
   last_pos_ = Eigen::Vector3f(0.0, 0.0, 0.0);
   
   ROS_INFO("Tracking ready !");
   
-  last_observ_time_ = ros::WallTime(0.0);
+  last_observ_time_ = ros::Time(0.0);
   
   
   ros::spin();
@@ -161,7 +162,7 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
 	x_k1(0,0) = obs(0);
 	x_k1(1,0) = obs(1);
 	x_k1(2,0) = obs(2);
-	kalman_.init(Eigen::Vector3f(kinect_noise_, kinect_noise_, kinect_noise_), Eigen::Vector3f(process_noise_ ,process_noise_, process_noise_), -1, x_k1);
+	kalman_.init(Eigen::Vector3f(kinect_noise_, kinect_noise_, kinect_noise_z_), Eigen::Vector3f(process_noise_ ,process_noise_, process_noise_), -1, x_k1);
 	ROS_INFO("New pose too far. Reinitializing tracking!");
       }
     }
@@ -171,11 +172,11 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     if (last_observ_time_.sec == 0)
       delta_t = -1;
     else
-      delta_t = (ros::WallTime::now() - last_observ_time_).toSec();
+      delta_t = (ros::Time::now() - last_observ_time_).toSec();
     
     Eigen::Matrix<float, 9, 1> est;
     kalman_.estimate(obs, delta_t, est); 
-    last_observ_time_ = ros::WallTime::now();
+    last_observ_time_ = ros::Time::now();
     
     // Save new estimated pose
     last_pos_(0) = est(0);
