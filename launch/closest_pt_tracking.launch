@@ -3,8 +3,9 @@
   <arg name="kinect_topic_name" default="kinect_both"/>
   <arg name="clusters_topic_name" default="$(arg kinect_topic_name)/clusters" />
   <arg name="out_topic_name" default="$(arg kinect_topic_name)/human_detection" />
-  <arg name="voxel_size" default="0.02" />
+  <arg name="voxel_size" default="0.03" />
   <arg name="min_cluster_size" default="100" />
+  <arg name="clustering_tolerance" default="0.06" />  <!-- 2*voxel_size -->
   <arg name="process_noise" default="0.1" />
   <arg name="kinect_noise" default="0.01" />
   <arg name="minimum_height" default="0" />
@@ -17,6 +18,7 @@
     <param name="out_topic_name" value="$(arg out_topic_name)" />
     <param name="voxel_size" value="$(arg voxel_size)" />
     <param name="min_cluster_size" value="$(arg min_cluster_size)" />
+    <param name="clustering_tolerance" value="$(arg clustering_tolerance)" />
     <param name="process_noise" value="$(arg process_noise)" />
     <param name="kinect_noise" value="$(arg kinect_noise)" />
     <param name="minimum_height" value="$(arg minimum_height)" />
