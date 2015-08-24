@@ -26,6 +26,7 @@ typedef sensor_msgs::PointCloud2 PCMsg;
 PointCloudSM::Ptr kinects_pc_, cluster_cloud_;
 ros::Publisher cluster_pc_pub_, pc_clustered_pub_, cloud_mini_pt_pub_, dist_pt_pub_, cluster_state_pub_, mins_pub_, min_pub_,vel_pub_;
 double last_min_dist_, voxel_size_, kinect_noise_, process_noise_, minimum_height_, max_tracking_jump_, clustering_tolerance_;
+bool downsampling_;
 geometry_msgs::PointStamped last_cluster_pt_;
 int min_cluster_size_;
 Eigen::Vector3f last_pos_;

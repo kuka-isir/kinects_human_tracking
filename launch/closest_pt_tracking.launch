@@ -3,19 +3,20 @@
   <arg name="kinect_topic_name" default="kinect_both"/>
   <arg name="clusters_topic_name" default="$(arg kinect_topic_name)/clusters" />
   <arg name="out_topic_name" default="$(arg kinect_topic_name)/human_detection" />
+  <arg name="downsampling" default="false" />
   <arg name="voxel_size" default="0.03" />
   <arg name="min_cluster_size" default="100" />
   <arg name="clustering_tolerance" default="0.06" />  <!-- 2*voxel_size -->
   <arg name="process_noise" default="0.1" />
   <arg name="kinect_noise" default="0.01" />
   <arg name="minimum_height" default="0" />
-  <arg name="max_tracking_jump" default="0.3" />
-  
+  <arg name="max_tracking_jump" default="0.5" />  
 
   <node name="closest_pt_tracking" pkg="kinects_human_tracking" type="closest_pt_tracking" output="screen">
     <param name="kinect_topic_name" value="$(arg kinect_topic_name)" />
     <param name="clusters_topic_name" value="$(arg clusters_topic_name)" />
     <param name="out_topic_name" value="$(arg out_topic_name)" />
+    <param name="downsampling" value="$(arg downsampling)" />
     <param name="voxel_size" value="$(arg voxel_size)" />
     <param name="min_cluster_size" value="$(arg min_cluster_size)" />
     <param name="clustering_tolerance" value="$(arg clustering_tolerance)" />

@@ -27,6 +27,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("max_tracking_jump",max_tracking_jump_);
   params_loaded *= nh_priv.getParam("clipping_rules",clipping_rules_bounds);
   params_loaded *= nh_priv.getParam("clustering_tolerance",clustering_tolerance_);
+  params_loaded *= nh_priv.getParam("downsampling",downsampling_);
   
   if(!params_loaded){
     ROS_ERROR("Couldn't find all the required parameters. Closing...");
@@ -98,7 +99,8 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
   pcl::removeNaNFromPointCloud<pcl::PointXYZRGB>(*kinects_pc_, *kinects_pc_, indices);
   
   // Downsampling the two pointClouds
-  pc_downsampling(kinects_pc_, voxel_size_, kinects_pc_);
+  if(downsampling_)
+    pc_downsampling(kinects_pc_, voxel_size_, kinects_pc_);
   
   // Clustering
   std::vector<pcl::PointIndices> cluster_indices = pc_clustering(kinects_pc_, min_cluster_size_, clustering_tolerance_ ,kinects_pc_);
