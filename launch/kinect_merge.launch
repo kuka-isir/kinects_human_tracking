@@ -1,12 +1,18 @@
 <launch>
-  <arg name="first_topic_name" default="kinect1/background_sub"/>
-  <arg name="second_topic_name" default="kinect2/background_sub"/>
+  <arg name="topic_name1" default="kinect1/background_sub"/>
+  <arg name="topic_name2" default=""/>
+  <arg name="topic_name3" default=""/>
+  <arg name="topic_name4" default=""/>
+  <arg name="topic_name5" default=""/>
   <arg name="out_frame" default="world"/>
   <arg name="out_topic_name" default="kinect_both"/>
 
   <node name="kinects_merge" pkg="kinects_human_tracking" type="merge_kinects_pc" output="screen">
-    <param name="first_topic_name" value="$(arg first_topic_name)" />
-    <param name="second_topic_name" value="$(arg second_topic_name)" />
+    <param name="topic_name1" value="$(arg topic_name1)" />
+    <param name="topic_name2" value="$(arg topic_name2)" />
+    <param name="topic_name3" value="$(arg topic_name3)" />
+    <param name="topic_name4" value="$(arg topic_name4)" />
+    <param name="topic_name5" value="$(arg topic_name5)" />
     <param name="out_frame" value="$(arg out_frame)" />
     <param name="out_topic_name" value="$(arg out_topic_name)" />
   </node>
