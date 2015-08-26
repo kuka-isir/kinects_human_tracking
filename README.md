@@ -19,7 +19,6 @@ So the different steps are:
 
 ## TODOs
 - Remove the robot points from the pointclouds
-- Allow the use of more than 2 kinects
 - Allow the use of a particle filter
 - Add more rules to detect humans
   
@@ -96,18 +95,16 @@ This node removes the points that are farther away than the min background. So e
 roslaunch kinects_human_tracking kinect_merge.launch
 ```
 ###### Arguments
-- *first_topic_name* (string, default: kinect1/background_sub) 
-
-- *second_topic_name* (string, default: kinect2/background_sub)
+- *topic_nameX* (string, default: "kinectX/background_sub" or "") 
 
 - *out_frame* (string, default: world)
 
     The pointClouds are transformed into the same frame before merge.   
     The tracking will be done in the (x,y) plane of this frame
 
-- *out_topic_name* (string, default: kinect_both) 
+- *out_topic_name* (string, default: kinect_merge) 
     
-This node only takes the 2 kinect pointCloud, transforms them into the `out_frame`, and adds them.
+This node takes up to 9(limited by ros::TimeSynchronizer) kinect pointCloud topics, transforms the pointClouds into the `out_frame`, and adds them.
 
 #### Human detection and tracking
 ![clustering](https://googledrive.com/host/0B61-Kf77E1hUaWFDd1hEUEt2Ync)
@@ -117,7 +114,7 @@ This node only takes the 2 kinect pointCloud, transforms them into the `out_fram
 roslaunch kinects_human_tracking kinect_human_tracking.launch
 ```
 ###### Arguments
-- *kinect_topic_name* (string, default: kinect_both) 
+- *kinect_topic_name* (string, default: kinect_merge) 
 
 - *robot_topic_name* (string, default: robot_model_to_pointcloud/robot_cloud2)
 
