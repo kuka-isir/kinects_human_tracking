@@ -125,7 +125,6 @@ include_directories(
 add_executable(kinect_background_store src/kinect_background_store.cpp)
 add_executable(kinect_background_sub src/kinect_background_sub.cpp)
 add_executable(merge_kinects_pc src/merge_kinects_pc.cpp)
-add_executable(pointcloud_transform src/pointCloudTransform.cpp)
 add_executable(kinect_human_tracking src/kinect_human_tracking.cpp src/kalmanFilter.cpp)
 add_executable(closest_pt_tracking src/closest_pt_tracking.cpp src/kalmanFilter3Pos3Vel.cpp)
 
@@ -137,7 +136,6 @@ add_executable(closest_pt_tracking src/closest_pt_tracking.cpp src/kalmanFilter3
 target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
 target_link_libraries(kinect_background_sub  ${catkin_LIBRARIES})
 target_link_libraries(merge_kinects_pc ${catkin_LIBRARIES})
-target_link_libraries(pointcloud_transform ${catkin_LIBRARIES})
 target_link_libraries(kinect_human_tracking  ${catkin_LIBRARIES})
 target_link_libraries(closest_pt_tracking  ${catkin_LIBRARIES})
 
