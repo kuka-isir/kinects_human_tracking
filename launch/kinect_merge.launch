@@ -4,6 +4,10 @@
   <arg name="topic_name3" default=""/>
   <arg name="topic_name4" default=""/>
   <arg name="topic_name5" default=""/>
+  <arg name="topic_name6" default=""/>
+  <arg name="topic_name7" default=""/>
+  <arg name="topic_name8" default=""/>
+  <arg name="topic_name9" default=""/>
   <arg name="out_frame" default="world"/>
   <arg name="out_topic_name" default="kinect_both"/>
 
@@ -13,6 +17,10 @@
     <param name="topic_name3" value="$(arg topic_name3)" />
     <param name="topic_name4" value="$(arg topic_name4)" />
     <param name="topic_name5" value="$(arg topic_name5)" />
+    <param name="topic_name6" value="$(arg topic_name6)" />
+    <param name="topic_name7" value="$(arg topic_name7)" />
+    <param name="topic_name8" value="$(arg topic_name8)" />
+    <param name="topic_name9" value="$(arg topic_name9)" />
     <param name="out_frame" value="$(arg out_frame)" />
     <param name="out_topic_name" value="$(arg out_topic_name)" />
   </node>

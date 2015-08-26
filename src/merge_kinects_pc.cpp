@@ -20,7 +20,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 
 /**
-   Subscribe to 1 to 5 pointclouds, transform into 
+   Subscribe to 1 to 9 pointclouds, transform into 
    one frame. Merge them and then publish as a
    new Point Cloud.
 **/
@@ -32,13 +32,20 @@ typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg> MySyncPoli
 typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg> MySyncPolicy3;
 typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg, PCMsg> MySyncPolicy4;
 typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg, PCMsg, PCMsg> MySyncPolicy5;
+typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg> MySyncPolicy6;
+typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg> MySyncPolicy7;
+typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg> MySyncPolicy8;
+typedef message_filters::sync_policies::ApproximateTime<PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg, PCMsg> MySyncPolicy9;
 
 struct pclTransform{
   Eigen::Vector3d translation;
   Eigen::Quaterniond rotation;
 };
 
-// void callback(const PCMsg::ConstPtr& front_pc, const PCMsg::ConstPtr& back_pc );
+void callback9(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2, const PCMsg::ConstPtr& seventh_msg_pc2, const PCMsg::ConstPtr& eighth_msg_pc2, const PCMsg::ConstPtr& ninth_msg_pc2 );
+void callback8(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2, const PCMsg::ConstPtr& seventh_msg_pc2, const PCMsg::ConstPtr& eighth_msg_pc2 );
+void callback7(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2, const PCMsg::ConstPtr& seventh_msg_pc2 );
+void callback6(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2 );
 void callback5(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2 );
 void callback4(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2);
 void callback3(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2 );
@@ -109,32 +116,56 @@ int main(int argc, char** argv){
       break;
     }
     case 2:{ 
-      message_filters::Synchronizer<MySyncPolicy2> sync2(MySyncPolicy2(10), *subs[0], *subs[1]);
-      sync2.registerCallback(boost::bind(&callback2, _1, _2));
+      message_filters::Synchronizer<MySyncPolicy2> sync(MySyncPolicy2(10), *subs[0], *subs[1]);
+      sync.registerCallback(boost::bind(&callback2, _1, _2));
       cout <<"callback2"<<endl;
       ros::spin();
       break;
     }
     case 3:{
-      message_filters::Synchronizer<MySyncPolicy3> sync3(MySyncPolicy3(10), *subs[0], *subs[1], *subs[2]);
-      sync3.registerCallback(boost::bind(&callback3, _1, _2, _3));
+      message_filters::Synchronizer<MySyncPolicy3> sync(MySyncPolicy3(10), *subs[0], *subs[1], *subs[2]);
+      sync.registerCallback(boost::bind(&callback3, _1, _2, _3));
       ros::spin();
       break;
     }
     case 4:{
-      message_filters::Synchronizer<MySyncPolicy4> sync4(MySyncPolicy4(10), *subs[0], *subs[1], *subs[2], *subs[3]);
-      sync4.registerCallback(boost::bind(&callback4, _1, _2, _3, _4));
+      message_filters::Synchronizer<MySyncPolicy4> sync(MySyncPolicy4(10), *subs[0], *subs[1], *subs[2], *subs[3]);
+      sync.registerCallback(boost::bind(&callback4, _1, _2, _3, _4));
       ros::spin();
       break;
     }
     case 5:{
-      message_filters::Synchronizer<MySyncPolicy5> sync5(MySyncPolicy5(10), *subs[0], *subs[1], *subs[2], *subs[3], *subs[4]);
-      sync5.registerCallback(boost::bind(&callback5, _1, _2, _3, _4, _5));
+      message_filters::Synchronizer<MySyncPolicy5> sync(MySyncPolicy5(10), *subs[0], *subs[1], *subs[2], *subs[3], *subs[4]);
+      sync.registerCallback(boost::bind(&callback5, _1, _2, _3, _4, _5));
+      ros::spin();
+      break;
+    }
+    case 6:{
+      message_filters::Synchronizer<MySyncPolicy6> sync(MySyncPolicy6(10), *subs[0], *subs[1], *subs[2], *subs[3], *subs[4], *subs[5]);
+      sync.registerCallback(boost::bind(&callback6, _1, _2, _3, _4, _5, _6));
+      ros::spin();
+      break;
+    }
+    case 7:{
+      message_filters::Synchronizer<MySyncPolicy7> sync(MySyncPolicy7(10), *subs[0], *subs[1], *subs[2], *subs[3], *subs[4], *subs[5], *subs[6]);
+      sync.registerCallback(boost::bind(&callback7, _1, _2, _3, _4, _5, _6, _7));
+      ros::spin();
+      break;
+    }
+    case 8:{
+      message_filters::Synchronizer<MySyncPolicy8> sync(MySyncPolicy8(10), *subs[0], *subs[1], *subs[2], *subs[3], *subs[4], *subs[5], *subs[6], *subs[7]);
+      sync.registerCallback(boost::bind(&callback8, _1, _2, _3, _4, _5, _6, _7, _8));
+      ros::spin();
+      break;
+    }
+    case 9:{
+      message_filters::Synchronizer<MySyncPolicy9> sync(MySyncPolicy9(10), *subs[0], *subs[1], *subs[2], *subs[3], *subs[4], *subs[5], *subs[6], *subs[7], *subs[8]);
+      sync.registerCallback(boost::bind(&callback9, _1, _2, _3, _4, _5, _6, _7, _8, _9));
       ros::spin();
       break;
     }
     default:
-      ROS_ERROR("Too many topics provided. Current limitation is of 5 kinects");
+      ROS_ERROR("Too many topics provided. Current limitation is of 9 kinects");
       return 1;
       break;
   }
@@ -177,6 +208,52 @@ void callback5(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& seco
   pcs_msg_pc2_.push_back(third_msg_pc2);
   pcs_msg_pc2_.push_back(fourth_msg_pc2);
   pcs_msg_pc2_.push_back(fifth_msg_pc2);
+  merge_pcs(pcs_msg_pc2_);
+}
+void callback6(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2 ){
+  pcs_msg_pc2_.clear();
+  pcs_msg_pc2_.push_back(first_msg_pc2);
+  pcs_msg_pc2_.push_back(second_msg_pc2);
+  pcs_msg_pc2_.push_back(third_msg_pc2);
+  pcs_msg_pc2_.push_back(fourth_msg_pc2);
+  pcs_msg_pc2_.push_back(fifth_msg_pc2);
+  pcs_msg_pc2_.push_back(sixth_msg_pc2);
+  merge_pcs(pcs_msg_pc2_);
+}
+void callback7(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2, const PCMsg::ConstPtr& seventh_msg_pc2 ){
+  pcs_msg_pc2_.clear();
+  pcs_msg_pc2_.push_back(first_msg_pc2);
+  pcs_msg_pc2_.push_back(second_msg_pc2);
+  pcs_msg_pc2_.push_back(third_msg_pc2);
+  pcs_msg_pc2_.push_back(fourth_msg_pc2);
+  pcs_msg_pc2_.push_back(fifth_msg_pc2);
+  pcs_msg_pc2_.push_back(sixth_msg_pc2);
+  pcs_msg_pc2_.push_back(seventh_msg_pc2);
+  merge_pcs(pcs_msg_pc2_);
+}
+void callback8(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2, const PCMsg::ConstPtr& seventh_msg_pc2, const PCMsg::ConstPtr& eighth_msg_pc2 ){
+  pcs_msg_pc2_.clear();
+  pcs_msg_pc2_.push_back(first_msg_pc2);
+  pcs_msg_pc2_.push_back(second_msg_pc2);
+  pcs_msg_pc2_.push_back(third_msg_pc2);
+  pcs_msg_pc2_.push_back(fourth_msg_pc2);
+  pcs_msg_pc2_.push_back(fifth_msg_pc2);
+  pcs_msg_pc2_.push_back(sixth_msg_pc2);
+  pcs_msg_pc2_.push_back(seventh_msg_pc2);
+  pcs_msg_pc2_.push_back(eighth_msg_pc2);
+  merge_pcs(pcs_msg_pc2_);
+}
+void callback9(const PCMsg::ConstPtr& first_msg_pc2, const PCMsg::ConstPtr& second_msg_pc2, const PCMsg::ConstPtr& third_msg_pc2, const PCMsg::ConstPtr& fourth_msg_pc2, const PCMsg::ConstPtr& fifth_msg_pc2, const PCMsg::ConstPtr& sixth_msg_pc2, const PCMsg::ConstPtr& seventh_msg_pc2, const PCMsg::ConstPtr& eighth_msg_pc2, const PCMsg::ConstPtr& ninth_msg_pc2 ){
+  pcs_msg_pc2_.clear();
+  pcs_msg_pc2_.push_back(first_msg_pc2);
+  pcs_msg_pc2_.push_back(second_msg_pc2);
+  pcs_msg_pc2_.push_back(third_msg_pc2);
+  pcs_msg_pc2_.push_back(fourth_msg_pc2);
+  pcs_msg_pc2_.push_back(fifth_msg_pc2);
+  pcs_msg_pc2_.push_back(sixth_msg_pc2);
+  pcs_msg_pc2_.push_back(seventh_msg_pc2);
+  pcs_msg_pc2_.push_back(eighth_msg_pc2);
+  pcs_msg_pc2_.push_back(ninth_msg_pc2);
   merge_pcs(pcs_msg_pc2_);
 }
 
