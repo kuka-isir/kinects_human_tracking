@@ -9,7 +9,7 @@
   <arg name="topic_name8" default=""/>
   <arg name="topic_name9" default=""/>
   <arg name="out_frame" default="world"/>
-  <arg name="out_topic_name" default="kinect_both"/>
+  <arg name="out_topic_name" default="kinect_merge"/>
 
   <node name="kinects_merge" pkg="kinects_human_tracking" type="merge_kinects_pc" output="screen">
     <param name="topic_name1" value="$(arg topic_name1)" />

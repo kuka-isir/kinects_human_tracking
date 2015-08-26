@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="kinect_topic_name" default="kinect_both"/>
+  <arg name="kinect_topic_name" default="kinect_merge"/>
   <arg name="clusters_topic_name" default="$(arg kinect_topic_name)/clusters" />
   <arg name="out_topic_name" default="$(arg kinect_topic_name)/human_detection" />
   <arg name="downsampling" default="false" />
