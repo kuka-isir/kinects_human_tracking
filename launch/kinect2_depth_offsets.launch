@@ -1,0 +1,7 @@
+<launch>
+
+	<arg name="kinect_name" value="kinect2" />
+
+	<rosparam command="load" ns="/$(arg kinect_name)/driver" file="$(find kinects_human_tracking)/config/$(arg kinect_name)_depth_offsets.yaml" />
+
+</launch>

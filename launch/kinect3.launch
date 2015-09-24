@@ -1,22 +1,15 @@
 <launch>
-	<arg name="calibrate" 			default="false"/>
 	<arg name="camera" 			default="kinect3" />
 	<arg name="device_serial"		default="1306260132" />
-	<arg name="device_id"	 		default="#1" />
+	<arg name="device_id"	 		default="2@0" />
 	<arg name="base_link" 			default="world" />
-
+	<arg name="publish_tf" 			default="true" />
 	<arg name="depth_registration" 		default="true" />
 	<arg name="rgb_camera_info_url" 	default="file://$(find kinect_extrinsics_simple)/camera_info/rgb_$(arg device_serial).yaml" />
 	<arg name="depth_camera_info_url" 	default="file://$(find kinect_extrinsics_simple)/camera_info/depth_$(arg device_serial).yaml" />
 
-	<arg name="extrinsics_pose" 		default="0 0 0 0 0 0"/>
-	<arg name="chessboard_dim" 		default="7 6 0.0822"/>
-	<arg name="chessboard_pose" 		default="0 0 0"/>
+	<include file="$(find kinects_human_tracking)/launch/$(arg camera)_depth_offsets.launch" />
 
-	<arg name="extrinsics_file" 		default=""/>
-
-	<!-- Kinect Extrinsics -->
-	<!--node pkg="tf" type="static_transform_publisher" name="$(arg camera)_extrinsics" args="$(arg extrinsics_pose) $(arg base_link) $(arg camera_frame_id) 100" unless="$(arg calibrate)"/-->
 	<!-- Openni Launch -->
 	<include file="$(find openni_launch)/launch/openni.launch">
 		<arg name="camera" value="$(arg camera)" />
@@ -24,11 +17,7 @@
 		<arg name="depth_registration" value="$(arg depth_registration)" />
 		<arg name="rgb_camera_info_url" value="$(arg rgb_camera_info_url)" />
 		<arg name="depth_camera_info_url" value="$(arg depth_camera_info_url)" />
+		<arg name="publish_tf" value="$(arg publish_tf)" />
 	</include>
-
-	<!-- Chessboard calibration -->
-	<node name="$(arg camera)_calibration" pkg="kinect_extrinsics_simple" type="simple_chessboard_calib.py"
-		args="$(arg camera) $(arg base_link) $(arg chessboard_dim) $(arg chessboard_pose) -o $(arg extrinsics_file)" output="screen" if="$(arg calibrate)"
-	/>
 
 </launch>

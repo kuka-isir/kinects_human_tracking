@@ -26,7 +26,7 @@
     <param name="kinect_noise_z" value="$(arg kinect_noise_z)" />
     <param name="minimum_height" value="$(arg minimum_height)" />
     <param name="max_tracking_jump" value="$(arg max_tracking_jump)" />
-    <rosparam param="clipping_rules">[z, GT, 0.0]</rosparam>
+    <rosparam param="clipping_rules">[z, GT, 0.0, y, GT, -2.5]</rosparam>
   </node>
 
 </launch>
