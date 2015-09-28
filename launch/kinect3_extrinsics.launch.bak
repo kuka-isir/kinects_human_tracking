@@ -1,3 +1,3 @@
 <launch>
-   <node pkg="tf" type="static_transform_publisher" name="calib_kinect3" args="1.606 -0.617 1.217 -0.232 0.018 0.964 0.128 /base_link /kinect3_link 100" />
+   <node pkg="tf" type="static_transform_publisher" name="calib_kinect3" args="1.6232624305 -0.618036145637 1.20021782982 -0.222446853296 0.0158900319038 0.966835360258 0.12447606396 /base_link /kinect3_link 100" />
 </launch>
