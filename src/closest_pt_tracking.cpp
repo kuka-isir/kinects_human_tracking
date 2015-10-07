@@ -64,6 +64,7 @@ int main(int argc, char** argv){
   cluster_pc_pub_ = nh.advertise<PointCloudSM>(out_topic_name, 1);
   cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_tracking_pt",1);
   cluster_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/tracking_state",1);
+  dist_vect_pub_ = nh.advertise<geometry_msgs::Vector3>(kinect_topic_name+"/distance_vector",1);
   min_pub_ = nh.advertise<std_msgs::Float32>("minimum_distance",1);
   vel_pub_ = nh.advertise<geometry_msgs::Twist>("velocity",1);
   ros::Subscriber kinect_pc_sub = nh.subscribe<PCMsg>(kinect_topic_name, 1, callback);
@@ -195,6 +196,18 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     twist.linear.y = est(4);
     twist.linear.z = est(5);
     vel_pub_.publish(twist);
+    
+    // Publish vector between point and end-effector
+    tf::StampedTransform end_eff_transform;
+    tf_listener_->waitForTransform(kinects_pc_->header.frame_id, "ati_link", ros::Time(0.0), ros::Duration(0.5));
+    tf_listener_->lookupTransform(kinects_pc_->header.frame_id, "ati_link", ros::Time(0.0), end_eff_transform);
+    
+    geometry_msgs::Vector3 dist_vect;
+    dist_vect.x = end_eff_transform.getOrigin().getX() - est(0);
+    dist_vect.y = end_eff_transform.getOrigin().getY() - est(1);
+    dist_vect.z = end_eff_transform.getOrigin().getZ() - est(2);
+    dist_vect_pub_.publish(dist_vect);
+    
   }
 }
 
