@@ -7,6 +7,7 @@
   <arg name="voxel_size" default="0.05" />
   <arg name="min_cluster_size" default="300" />
   <arg name="clustering_tolerance" default="0.06" />  <!-- 2*voxel_size -->
+  <arg name="end_eff_frame" default="ati_link" />
   <arg name="process_noise" default="0.05" />
   <arg name="kinect_noise" default="2.5" />
   <arg name="kinect_noise_z" default="5" />
