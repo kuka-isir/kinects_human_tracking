@@ -150,6 +150,10 @@ roslaunch kinects_human_tracking kinect_human_tracking.launch
 
     Distance required between two points to be considered neighbours in the clustering
 
+- *end_eff_frame* (string, default: ati_link)
+
+    Name of the end_effector frame from which you want to track the closest distance
+    
 - *process_noise* (double, default: 0.1)
 
     Estimated noise create by the pointCloud processing, for Kalman filter
