@@ -1,139 +1,154 @@
 # kinects_human_tracking
 
-This package is meant to be used for tracking a human moving around a robot. We strongly recommend to use several kinects (mainly to deal with occlusion from the robot) but this package can be used with a single Kinect.
-First, for all kinects, we store the background once, and then remove it in real-time.
-Then all the kinect's clouds are merged into a single one and transformed into the 'base_link' frame.
-Finally, we create clusters from the merged pointCloud, select the closest cluster to the robot and track it.
+This package is meant to be used for tracking a humans carrying stuff and moving around a robot. We strongly recommend to use several RGBD-sensors, "kinects", (mainly to deal with occlusion from the robot) but this package can be used with a single sensor.
+Obviously all the sensors intrinsics and extrinsics need to be properly calibrated.
+First, for all kinects, we remove the robot from the pointcloud so we won't be tracking the robot moving around instead of humans.
+Secondly, the static background is then removed by substracting a photo of the current view without any humans in it.
+Then I create a pointcloud for each background&robot-subtracted depth image, downsample the resulting pointClouds and merge all these points together in a single cloud.
+Finally, we create clusters from the merged pointCloud and use only the closest cluster to the robot.
 
 So the different steps are:
   - run the robot
-  - publish the robot pointCloud
-  - get the pointCloud from the kinect
-  - store the min/max background (only once)
-  - remove the background from the different kinects pointCloud
-  - remove the robot from the pointCloud (TODO)
-  - merge the pointCloud from all the kinects
-  - do some clustering on the remaining points to get objects
+  - run the RGBD-sensors
+  - publish the extrinsics (camera position) of each sensors
+  - remove the robot from the depth images
+  - store the min background
+  - remove the background from the depth images
+  - create pointClouds from the depth images
+  - downsample the pointClouds
+  - merge all the pointClouds together
+  - do some clustering on the remaining points to get objects 
   - apply rules to the clusters to find out which ones are humans (optional)
-  - run tracking, only kalman filter for now
+  - run tracking (only kalman filter for now)
 
 ## TODOs
-- Remove the robot points from the pointclouds
 - Allow the use of a particle filter
 - Add more rules to detect humans
+- Improve even more the code by using nodelets
   
 ## Requirements
 - The kinect intrinsics and extrinsics need to be calibrated properly.
-- The package robot_model_to_pointcloud : https://github.com/ahoarau/robot_model_to_pointcloud
-- You probably can't run more than 2 Kinects on the same computer, or maybe not more than 1
-- The Kinects and backrgound substraction should be running on a different computer. Otherwise the processing won't probably be able to go faster than 15FPS.
+- You probably can't run more than 2 Kinects on the same computer without losing FPS in the end. (I am running 2 with 30FPS!)
+- You will need the realtime_urdf_filter package with a few adjustments: https://github.com/JimmyDaSilva/realtime_urdf_filter.git (Use branch indigo-devel)
+- The realtime URDF filter uses OpenGL, therefore a GPU
 
 ## Instructions
 ```
-roslaunch lwr_description lwr_test.launch
-roslaunch robot_model_to_pointcloud robot_model_to_pointcloud.launch
-roslaunch kinects_human_tracking kinect1_calib.launch
-roslaunch kinects_human_tracking kinect2_calib.launch
+roslaunch lwr_description lwr_test.launch (or another robot)
 roslaunch kinects_human_tracking kinect1.launch
 roslaunch kinects_human_tracking kinect2.launch
-roslaunch kinects_human_tracking kinect_background_sub_both.launch
-roslaunch kinects_human_tracking kinect_merge.launch 	(or roslaunch kinects_human_tracking transformPointCloud.launch  if using only one kinect)
-roslaunch kinects_human_tracking kinect_human_tracking.launch
+roslaunch kinects_human_tracking kinect1_extrinsics.launch
+roslaunch kinects_human_tracking kinect2_extrinsics.launch
+roslaunch realtime_urdf_filter filter.launch kinect_name:=kinect1
+roslaunch realtime_urdf_filter filter.launch kinect_name:=kinect2
+roslaunch kinects_human_tracking kinect_img_bg_store.launch kinect_name:=kinect1
+roslaunch kinects_human_tracking kinect_img_bg_store.launch kinect_name:=kinect2
+roslaunch kinects_human_tracking kinect_img_bg_sub.launch kinect_name:=kinect1
+roslaunch kinects_human_tracking kinect_img_bg_sub.launch kinect_name:=kinect2
+roslaunch kinects_human_tracking create_pc.launch kinect_name:=kinect1
+roslaunch kinects_human_tracking create_pc.launch kinect_name:=kinect2
+roslaunch kinects_human_tracking kinect_merge.launch topic_name1:=/kinect1/depth_registered/downsampled_filtered_points topic_name2:=/kinect2/depth_registered/downsampled_filtered_points
+(or roslaunch kinects_human_tracking kinect_merge.launch topic_name1:=/kinect1/depth_registered/downsampled_filtered_points  if using only one kinect)
+roslaunch kinects_human_tracking closest_pt_tracking.launch
 ```
 
 ## Nodes description
-#### Robot pointCloud
-![robot_cloud](https://googledrive.com/host/0B61-Kf77E1hUYzF1SFRBWlpzRWM)
-```
-roslaunch robot_model_to_pointcloud robot_model_to_pointcloud.launch
-```
-After running the robot model of your choice, just run this node to publish the pointCloud of your robot. The points will correspond to the vertices of your collision mesh (a param can allow to use the visual mesh instead)
-
 #### Kinects
-![raw_kinect](https://googledrive.com/host/0B61-Kf77E1hUZzVEem43WDREXzQ)
-You need to run the calibrated Kinects you want to use and publish the their kinect_link frame. 
-You can use the `kinect1_calib.launch` and `kinect1.launch` to help you running Kinect devices with openni_launch.
+You need to run the calibrated Kinects you want to use and publish their kinect_link frame. 
+You can use the `kinect1.launch` and `kinect1_extrinsics.launch` to help you running Kinect devices with openni_launch.
+
+#### Realtime URDF filtering
+```
+roslaunch realtime_urdf_filter filter.launch
+```
+###### Arguments
+- *kinect_name* (string, default: camera) 
+  
+    Input depth image : `$(arg kinect_name)/depth_registered/image_raw`
+    Output depth image : `$(arg kinect_name)/depth_registered/filtered`
+
+This node uses your graphics card to remove really efficiently the robot from the depth image
 
 #### Background storage
 ```
-roslaunch kinects_human_tracking kinect_background_store.launch
-```
-###### Arguments
-- *kinect_name* (string, default: kinect1) 
-  
-    Background files are saved in `data/$(arg kinect_name)/`
-
-- *pc_topic* (string, default: $(arg kinect_name)/depth_registered/points)
-
-    PointCloud topic to use to store background
-
-- *bg_frames* (int, default: 30)
-    
-    Number of frames used to get the min and max backgrounds
-
-
-This node reads a certain number of pointCloud messages and writes the max and min values in a pcd file to be used as the max and min backgrounds.
-Files are saved in `data/$(arg kinect_name)/`
-
-#### Background substraction
-![background_sub](https://googledrive.com/host/0B61-Kf77E1hURE9jZXh4UVgyNk0)
-```
-roslaunch kinects_human_tracking kinect_background_sub.launch
+roslaunch kinects_human_tracking kinect_img_bg_store.launch
 ```
 ###### Arguments
 - *kinect_name* (string, default: camera) 
 
-- *topic_in* (string, default: $(arg kinect_name)/depth_registered/points)
+- *img_topic* (string, default: $(arg kinect_name)/depth_registered/image_raw)
+
+- *bg_frames* (int, default: 200)
+    Number of frames to take to create the minimum background
+
+This node creates a minimum background and makes it available for other node via a ROS service
+
+#### Background substraction
+```
+roslaunch kinects_human_tracking kinect_img_bg_sub.launch
+```
+###### Arguments
+- *kinect_name* (string, default: camera) 
+
+- *topic_in* (string, default: $(arg kinect_name)/depth_registered/filtered)
 
 - *topic_out* (string, default: $(arg kinect_name)/background_sub)
-    
 
-This node removes the points that are farther away than the min background. So everything moving in front of the background is kept.
+This node substract the saved depth background image from the current depth image
 
-#### Merge
+
+#### Cloudification
+```
+roslaunch kinects_human_tracking create_pc.launch
+```
+###### Arguments
+- *kinect_name* (string, default: camera) 
+
+This launch file runs two nodelets to create a pointcloud from a depth_image and then dowsamples it
+
+#### PointCloud merge
 ```
 roslaunch kinects_human_tracking kinect_merge.launch
 ```
 ###### Arguments
-- *topic_nameX* (string, default: "kinectX/background_sub" or "") 
+- *topic_nameX* where is 1 to 9 (string, default: camera/background_sub) 
 
-- *out_frame* (string, default: world)
-
-    The pointClouds are transformed into the same frame before merge.   
-    The tracking will be done in the (x,y) plane of this frame
-
+- *out_frame* (string, default: world) 
+ 
 - *out_topic_name* (string, default: kinect_merge) 
-    
-This node takes up to 9(limited by ros::TimeSynchronizer) kinect pointCloud topics, transforms the pointClouds into the `out_frame`, and adds them.
 
-#### Human detection and tracking
-![clustering](https://googledrive.com/host/0B61-Kf77E1hUaWFDd1hEUEt2Ync)
-![min_dist](https://googledrive.com/host/0B61-Kf77E1hUNFhXT1dlbVlzc0E)
-![tracking](https://googledrive.com/host/0B61-Kf77E1hUVGRSRUNSMnVwblU)
+This node will just transform the pointClouds into the `out_frame` and then sum all the points into a unique cloud
+
+#### Tracking of the closest cluster
 ```
 roslaunch kinects_human_tracking kinect_human_tracking.launch
 ```
 ###### Arguments
 - *kinect_topic_name* (string, default: kinect_merge) 
 
-- *robot_topic_name* (string, default: robot_model_to_pointcloud/robot_cloud2)
-
 - *clusters_topic_name* (string, default: $(arg kinect_topic_name)/clusters)
 
-    First out showing a downsampled version of the merged pointCloud.  
-    Each clusters has a random color value.
+    First output showing all the considered clusters with a random color each
 
 - *out_topic_name* (string, default: $(arg kinect_topic_name)/human_detection)
 
     PointCloud containing only the current tracked cluster
-    
-- *voxel_size* (double, default: 0.02)
 
-    Distance between each neighbours in cluster after downsampling
+- *dowsampling* (bool, default: false)
+
+    If you didn't follow the previous instructions and just want to use this node you might need to downsample the cloud here
+  
+- *voxel_size* (double, default: 0.03)
+
+    Distance between each neighbours in cluster after downsampling. If `downsampling is true`
 
 - *min_cluster_size* (int, default: 100)
 
     Minimum number of points to consider the object to be a cluster
+    
+- *cluster_tolerance* (double, default: 0.06)
+
+    Distance required between two points to be considered neighbours in the clustering
 
 - *process_noise* (double, default: 0.1)
 
@@ -143,11 +158,16 @@ roslaunch kinects_human_tracking kinect_human_tracking.launch
 
     Estimated kinect noise, for Kalman filter
 
-- *minimum_height* (double, default: 0.2)
+- *kinect_noise_z* (double, default: 0.01)
+
+    Estimated kinect noise on z axis, for Kalman filter
+
+- *minimum_height* (double, default: 0)
 
     If the found cluster is smaller than *minimum_height* (max_z-min_z) then cluster is not considered
+    0 means height of the cluster doesn't matter
 
-- *max_tracking_jump* (double, default: 0.3)
+- *max_tracking_jump* (double, default: 0.35)
 
     If the previous and new estimated positions are separated by *max_tracking_jump*, then reinitialize the Kalman filter
 
@@ -158,12 +178,12 @@ roslaunch kinects_human_tracking kinect_human_tracking.launch
 
 Here is what happens in the pointCloud processing:
 - Clipping of the pointCloud according to regions specified in launch file (optional). Note: Removing the points of the ground is required for clustering
-- Downsampling of the robot's pointCloud and the merged pointCloud
+- Downsampling of the merged pointCloud (if hasn't been done before)
 - Clustering on the merged pointCloud
 - Remove the clusters that don't have the minimum height
 - Find out which cluster is the closest to the robot
-- Compute stats on the selected cluster(min, max, var, median, mean)
-- Feed the Kalman filter with the observation and get the resulting estimate of the human's position and velocity
+- Looks for the point in this cluster that is the closest to the end-effector
+- Feed the Kalman filter with the observation and get the resulting estimate of the closest point's position and velocity
 
 > Author : Jimmy Da Silva, jimmy.dasilva AT isir.upmc.fr
 
