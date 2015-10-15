@@ -1,6 +1,6 @@
 <launch>
   <arg name="topic_name1" default="kinect1/background_sub"/>
-  <arg name="topic_name2" default="kinect2/background_sub"/>
+  <arg name="topic_name2" default=""/>
   <arg name="topic_name3" default=""/>
   <arg name="topic_name4" default=""/>
   <arg name="topic_name5" default=""/>
