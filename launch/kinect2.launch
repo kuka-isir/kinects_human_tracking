@@ -5,6 +5,7 @@
 	<arg name="base_link" 			default="world" />
 	<arg name="publish_tf"			default="true" />
 	<arg name="depth_registration" 		default="true" />
+	<arg name="num_worker_threads" 		default="3" />
 	<arg name="rgb_camera_info_url" 	default="file://$(find kinect_extrinsics_simple)/camera_info/rgb_$(arg device_serial).yaml" />
 	<arg name="depth_camera_info_url" 	default="file://$(find kinect_extrinsics_simple)/camera_info/depth_$(arg device_serial).yaml" />
 
@@ -18,6 +19,11 @@
 		<arg name="rgb_camera_info_url" value="$(arg rgb_camera_info_url)" />
 		<arg name="depth_camera_info_url" value="$(arg depth_camera_info_url)" />
 		<arg name="publish_tf" value="$(arg publish_tf)" />
+		<arg name="num_worker_threads" value="$(arg num_worker_threads)" />
+		<arg name="disparity_processing" value="false"/>
+		<arg name="disparity_registered_processing" value="false" />
+		<arg name="hw_registered_processing" value="false" />
+		<arg name="sw_registered_processing" value="false" />
 	</include>
 
 </launch>

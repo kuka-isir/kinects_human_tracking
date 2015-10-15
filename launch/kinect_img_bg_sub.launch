@@ -1,0 +1,11 @@
+<launch>
+  <arg name="kinect_name" default="camera"/>
+  <arg name="topic_in" default="$(arg kinect_name)/depth_registered/filtered"/>
+  <arg name="topic_out" default="$(arg kinect_name)/background_sub"/>
+
+  <node name="$(arg kinect_name)_img_bg_sub" pkg="kinects_human_tracking" type="kinect_img_bg_sub" output="screen">
+    <param name="kinect_name" value="$(arg kinect_name)" />
+    <param name="topic_in" value="$(arg topic_in)" />
+    <param name="topic_out" value="$(arg topic_out)" />
+  </node>
+</launch>

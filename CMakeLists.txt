@@ -26,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf_conversions
   visualization_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -69,11 +70,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  GetBackground.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -83,10 +83,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs#   std_msgs#   visualization_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+  sensor_msgs
+  std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -123,7 +125,10 @@ include_directories(
 
 ## Declare a cpp executable
 add_executable(kinect_background_store src/kinect_background_store.cpp)
+add_executable(kinect_img_bg_store src/kinect_img_bg_store.cpp)
 add_executable(kinect_background_sub src/kinect_background_sub.cpp)
+add_executable(kinect_img_bg_sub src/kinect_img_bg_sub.cpp)
+add_executable(pc_downsampling src/pc_downsampling.cpp)
 add_executable(merge_kinects_pc src/merge_kinects_pc.cpp)
 add_executable(kinect_human_tracking src/kinect_human_tracking.cpp src/kalmanFilter.cpp)
 add_executable(closest_pt_tracking src/closest_pt_tracking.cpp src/kalmanFilter3Pos3Vel.cpp)
@@ -134,7 +139,10 @@ add_executable(closest_pt_tracking src/closest_pt_tracking.cpp src/kalmanFilter3
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
+target_link_libraries(kinect_img_bg_store  ${catkin_LIBRARIES})
 target_link_libraries(kinect_background_sub  ${catkin_LIBRARIES})
+target_link_libraries(kinect_img_bg_sub  ${catkin_LIBRARIES})
+target_link_libraries(pc_downsampling  ${catkin_LIBRARIES})
 target_link_libraries(merge_kinects_pc ${catkin_LIBRARIES})
 target_link_libraries(kinect_human_tracking  ${catkin_LIBRARIES})
 target_link_libraries(closest_pt_tracking  ${catkin_LIBRARIES})
