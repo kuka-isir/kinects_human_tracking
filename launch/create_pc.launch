@@ -1,0 +1,30 @@
+<launch>
+
+  <arg name="kinect_name" default="camera" />  
+
+  <!-- Nodelet manager for this pipeline --> 
+  <node pkg="nodelet" type="nodelet" args="manager"
+        name="$(arg kinect_name)_record_player_manager" output="screen" />
+    
+  <!-- Nodelet to convert the filtered depth into a pointcloud    -->
+	<node pkg="nodelet" type="nodelet" name="$(arg kinect_name)_depth_filtered_cloudify"
+		   args="load depth_image_proc/point_cloud_xyzrgb $(arg kinect_name)_record_player_manager" output="screen">
+		<remap from="depth_registered/image_rect" to="$(arg kinect_name)/background_sub"/>
+		<remap from="depth_registered/points" to="$(arg kinect_name)/depth_registered/filtered_points"/>
+		<remap from="rgb/image_rect_color" to="$(arg kinect_name)/rgb/image_rect_color"/>
+		<remap from="rgb/camera_info" to="$(arg kinect_name)/rgb/camera_info"/>
+	</node>
+
+  <!-- Nodelet to clean NaNs and downsample the pointcloud  	-->
+  <node pkg="nodelet" type="nodelet" name="$(arg kinect_name)_voxel_grid" 
+				args="load pcl/VoxelGrid $(arg kinect_name)_record_player_manager" output="screen"> 
+		<remap from="~input" to="$(arg kinect_name)/depth_registered/filtered_points" />
+		<remap from="~output" to="$(arg kinect_name)/depth_registered/downsampled_filtered_points" />
+    <rosparam param="filter_field_name">z</rosparam>
+    <rosparam param="filter_limit_min">0.5</rosparam>
+    <rosparam param="filter_limit_max">4.0</rosparam>
+    <rosparam param="filter_limit_negative">False</rosparam>
+    <rosparam param="leaf_size">0.03</rosparam>
+  </node>
+
+</launch>
