@@ -21,6 +21,10 @@ So the different steps are:
   - apply rules to the clusters to find out which ones are humans (optional)
   - run tracking (only kalman filter for now)
 
+Short video to explain what it is possible to do with this piece of code:
+
+https://www.youtube.com/watch?v=kc1JB106Xrc
+
 ## TODOs
 - Allow the use of a particle filter
 - Add more rules to detect humans
