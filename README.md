@@ -54,10 +54,14 @@ roslaunch kinects_human_tracking closest_pt_tracking.launch
 
 ## Nodes description
 #### Kinects
+![kinect-color](https://googledrive.com/host/0B61-Kf77E1hUYU9IUmxzSTJIWEE)
+
+![kinect-depth](https://googledrive.com/host/0B61-Kf77E1hUQU5vTXZnX0sxa1E)
+
 You need to run the calibrated Kinects you want to use and publish their kinect_link frame. 
 You can use the `kinect1.launch` and `kinect1_extrinsics.launch` to help you running Kinect devices with openni_launch.
-
 #### Realtime URDF filtering
+![urdf_filter](https://googledrive.com/host/0B61-Kf77E1hUSk5xSkYzYVhaRVk)
 ```
 roslaunch realtime_urdf_filter filter.launch
 ```
@@ -84,6 +88,10 @@ roslaunch kinects_human_tracking kinect_img_bg_store.launch
 This node creates a minimum background and makes it available for other node via a ROS service
 
 #### Background substraction
+
+![color](https://googledrive.com/host/0B61-Kf77E1hUdW9ya0E5TTVVT3c)
+
+![bg_sub](https://googledrive.com/host/0B61-Kf77E1hUZ0VFYkhZdktGUFE)
 ```
 roslaunch kinects_human_tracking kinect_img_bg_sub.launch
 ```
@@ -98,6 +106,7 @@ This node substract the saved depth background image from the current depth imag
 
 
 #### Cloudification
+![cloud](https://googledrive.com/host/0B61-Kf77E1hUa3RaSGwtMXNYWWs)
 ```
 roslaunch kinects_human_tracking create_pc.launch
 ```
@@ -120,6 +129,7 @@ roslaunch kinects_human_tracking kinect_merge.launch
 This node will just transform the pointClouds into the `out_frame` and then sum all the points into a unique cloud
 
 #### Tracking of the closest cluster
+![tracking](https://googledrive.com/host/0B61-Kf77E1hUZnhOcUxMTnFtYzg)
 ```
 roslaunch kinects_human_tracking kinect_human_tracking.launch
 ```
