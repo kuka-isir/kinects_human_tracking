@@ -1,24 +1,4 @@
-#include <stdio.h>
-#include <iostream>
-#include <vector>
-#include <math.h>
-
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/variance.hpp>
-#include <boost/accumulators/statistics/max.hpp>
-#include <boost/accumulators/statistics/min.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <sensor_msgs/Image.h>
-#include <ros/ros.h>
-#include <cv_bridge/cv_bridge.h>
-
-#include "kinects_human_tracking/GetBackground.h"
-
-using namespace std;
-using namespace boost::accumulators;
+#include <kinects_human_tracking/kinect_img_bg_store.hpp>
 
 class BackgroundImageStore
 {

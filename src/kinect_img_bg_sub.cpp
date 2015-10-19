@@ -1,13 +1,4 @@
-#include <stdio.h>
-#include <iostream>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <sensor_msgs/Image.h>
-#include <cv_bridge/cv_bridge.h>
-#include <cv.h>
-#include <ros/ros.h>
-
-#include "kinects_human_tracking/GetBackground.h"
+#include <kinects_human_tracking/kinect_img_bg_sub.hpp>
 
 using namespace std;
 

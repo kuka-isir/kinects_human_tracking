@@ -1,24 +1,4 @@
-#include <stdio.h>
-#include <iostream>
-
-#include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/voxel_grid.h>
-
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <Eigen/SVD>
-
-using namespace std;
-
-typedef pcl::PointXYZ PXYZ;
-typedef pcl::PointCloud<PXYZ> PCXYZ;
-typedef pcl::PointXYZRGB PRGB;
-typedef pcl::PointCloud<PRGB> PCRGB;
+#include <kinects_human_tracking/kinect_background_sub.hpp>
 
 class BackgroundSubtract
 {

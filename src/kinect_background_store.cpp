@@ -1,35 +1,4 @@
-#include <stdio.h>
-#include <iostream>
-#include <vector>
-#include <math.h>
-
-#include <pcl/point_types.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/conversions.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <pcl/point_cloud.h>
-#include <pcl/visualization/cloud_viewer.h>
-
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <Eigen/SVD>
-
-#include <sensor_msgs/PointCloud2.h>
-
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/variance.hpp>
-#include <boost/accumulators/statistics/max.hpp>
-#include <boost/accumulators/statistics/min.hpp>
-
-using namespace std;
-using namespace boost::accumulators;
-
-typedef pcl::PointXYZRGB PRGB;
-typedef pcl::PointCloud<PRGB> PCRGB;
-typedef pcl::PointXYZ PXYZ;
-typedef pcl::PointCloud<PXYZ> PCXYZ;
+#include <kinects_human_tracking/kinects_background_store.hpp>
 
 class BackgroundStore
 {
