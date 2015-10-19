@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
   <name>kinects_human_tracking</name>
-  <version>0.0.0</version>
-  <description>The kinects_human_tracking package</description>
+  <version>2.0.0</version>
+  <description>The kinects_human_tracking package is meant to be used for tracking moving objects and/or humans around a robot</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -13,7 +13,7 @@
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>CeCILL</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
@@ -26,8 +26,6 @@
   <!-- Authors do not have to be maintianers, but could be -->
   <!-- Example: -->
   <author email="jimmy.dasilva@isir.upmc.fr">Jimmy Da Silva</author>
-  <author email="shray.bansal@gmail.com">Shray Bansal</author>
-
 
   <!-- The *_depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
