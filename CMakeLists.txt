@@ -132,7 +132,8 @@ add_executable(closest_pt_tracking src/closest_pt_tracking.cpp src/kalmanFilter3
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(kinects_human_tracking_node kinects_human_tracking_generate_messages_cpp)
+add_dependencies(kinect_img_bg_sub ${catkin_EXPORTED_TARGETS})
+add_dependencies(kinect_img_bg_store ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
