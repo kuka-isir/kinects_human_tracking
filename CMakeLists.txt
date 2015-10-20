@@ -102,6 +102,7 @@ catkin_package(
 #  LIBRARIES kinects_human_tracking
 #  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport libpcl-all-dev pcl_conversions pcl_ros roscpp rospy sensor_msgs std_msgs tf tf_conversions vision_opencv visualization_msgs
 #  DEPENDS system_lib
+ CATKIN_DEPENDS message_runtime
 )
 
 ###########
@@ -132,8 +133,8 @@ add_executable(closest_pt_tracking src/closest_pt_tracking.cpp src/kalmanFilter3
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-add_dependencies(kinect_img_bg_sub ${catkin_EXPORTED_TARGETS})
-add_dependencies(kinect_img_bg_store ${catkin_EXPORTED_TARGETS})
+add_dependencies(kinect_img_bg_sub ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(kinect_img_bg_store ${PROJECT_NAME}_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(kinect_background_store  ${catkin_LIBRARIES})
