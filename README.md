@@ -1,5 +1,8 @@
 # kinects_human_tracking
 
+#### Build status
+[![Build Status](https://travis-ci.org/kuka-isir/kinects_human_tracking.svg?branch=master)](https://travis-ci.org/kuka-isir/kinects_human_tracking)
+
 This package is meant to be used for tracking a humans carrying stuff and moving around a robot. We strongly recommend to use several RGBD-sensors, "kinects", (mainly to deal with occlusion from the robot) but this package can be used with a single sensor.
 Obviously all the sensors intrinsics and extrinsics need to be properly calibrated.
 First, for all kinects, we remove the robot from the pointcloud so we won't be tracking the robot moving around instead of humans.
