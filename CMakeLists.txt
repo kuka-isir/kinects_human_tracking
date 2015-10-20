@@ -14,9 +14,7 @@ add_definitions(${PCL_DEFINITIONS})
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
-  image_geometry
   geometry_msgs
-  image_transport
   pcl_conversions
   pcl_ros
   roscpp
