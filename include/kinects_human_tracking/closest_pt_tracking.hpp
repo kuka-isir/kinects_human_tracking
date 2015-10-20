@@ -68,6 +68,7 @@ KalmanFilter kalman_;
 ros::Time last_observ_time_;
 vector<ClippingRule> clipping_rules_;
 tf::TransformListener* tf_listener_;
+string enf_eff_frame_;
 
 // Functions declaration
 

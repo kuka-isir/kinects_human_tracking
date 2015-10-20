@@ -29,6 +29,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("clipping_rules",clipping_rules_bounds);
   params_loaded *= nh_priv.getParam("clustering_tolerance",clustering_tolerance_);
   params_loaded *= nh_priv.getParam("downsampling",downsampling_);
+  params_loaded *= nh_priv.getParam("end_eff_frame",enf_eff_frame_);
   
   if(!params_loaded){
     ROS_ERROR("Couldn't find all the required parameters. Closing...");
@@ -141,7 +142,7 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
    
   // Get closest cluster to the robot
   if (cluster_indices.size()>0){
-    get_closest_cluster_to_frame(kinects_pc_, cluster_indices, tf_listener_, "ati_link", cluster_cloud_, last_min_dist_, last_cluster_pt_);
+    get_closest_cluster_to_frame(kinects_pc_, cluster_indices, tf_listener_, enf_eff_frame_, cluster_cloud_, last_min_dist_, last_cluster_pt_);
     
     // Publish cluster's' pointCloud
     cluster_pc_pub_.publish(*cluster_cloud_);
@@ -199,8 +200,8 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     
     // Publish vector between point and end-effector
     tf::StampedTransform end_eff_transform;
-    tf_listener_->waitForTransform(kinects_pc_->header.frame_id, "ati_link", ros::Time(0.0), ros::Duration(1.0));
-    tf_listener_->lookupTransform(kinects_pc_->header.frame_id, "ati_link", ros::Time(0.0), end_eff_transform);
+    tf_listener_->waitForTransform(kinects_pc_->header.frame_id, enf_eff_frame_, ros::Time(0.0), ros::Duration(1.0));
+    tf_listener_->lookupTransform(kinects_pc_->header.frame_id, enf_eff_frame_, ros::Time(0.0), end_eff_transform);
     
     geometry_msgs::Vector3 dist_vect;
     dist_vect.x = end_eff_transform.getOrigin().getX() - est(0);
