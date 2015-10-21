@@ -6,8 +6,8 @@
 	<arg name="publish_tf"			default="true" />
 	<arg name="depth_registration" 		default="true" />
 	<arg name="num_worker_threads" 		default="3" />
-	<arg name="rgb_camera_info_url" 	default="file://$(find kinect_extrinsics_simple)/camera_info/rgb_$(arg device_serial).yaml" />
-	<arg name="depth_camera_info_url" 	default="file://$(find kinect_extrinsics_simple)/camera_info/depth_$(arg device_serial).yaml" />
+	<arg name="rgb_camera_info_url" 	default="file://$(find depth_cam_extrinsics_calib)/camera_info/rgb_$(arg device_serial).yaml" />
+	<arg name="depth_camera_info_url" 	default="file://$(find depth_cam_extrinsics_calib)/camera_info/depth_$(arg device_serial).yaml" />
 
 	<include file="$(find kinects_human_tracking)/launch/$(arg camera)_depth_offsets.launch" />
 
