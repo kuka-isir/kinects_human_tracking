@@ -15,7 +15,7 @@ from threading import Thread
 from scipy import stats
 from ar_track_alvar_msgs.msg import AlvarMarkers
 
-class TrackingGui(Thread):
+class TrackingVisu(Thread):
     def __init__(self,sensor_type, sensor_name):
         Thread.__init__(self)
         if sensor_name[-1] == '/':
@@ -89,7 +89,7 @@ def main(argv):
     sensor_name = rospy.get_param('~sensor_name')
     sensor_type = rospy.get_param('~sensor_type')
     
-    gui = TrackingGui(sensor_type, sensor_name)
+    gui = TrackingVisu(sensor_type, sensor_name)
     gui.start()
     rospy.spin()
 
