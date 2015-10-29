@@ -6,6 +6,7 @@ Created on Wed Oct 21 11:26:47 2015
 @author: Jimmy Da Silva <jimmy.dasilva@isir.upmc.fr>
 """
 from depth_cam_tools.kinect import Kinect
+from depth_cam_tools.kinect_v2 import Kinect_v2
 import rospy
 import cv2
 import tf
@@ -16,14 +17,15 @@ from scipy import stats
 from ar_track_alvar_msgs.msg import AlvarMarkers
 
 class TrackingVisu(Thread):
-    def __init__(self,sensor_type, sensor_name):
+    def __init__(self, sensor_name, sensor_type, serial):
         Thread.__init__(self)
         if sensor_name[-1] == '/':
             sensor_name = sensor_name[:-1]
         
         if (sensor_type == "Kinect2") or (sensor_type == "Kinectv2") or (sensor_type == "Kinect_v2"):
-            print "Loading "+sensor_name+" of type Kinect2"
-            print "ERROR: Kinect2 offset is already been computed during the intrinsics calibration. Nothing to be done here"
+            self.kinect_type = "Kinect2"
+            print "Loading Kinect2 with serial : "+serial 
+            self.kinect = Kinect_v2(sensor_name,serial,queue_size=10,compression=False,use_rect=True,use_ir=True)
             return
         elif (sensor_type == "Kinect") or (sensor_type == "Kinect1") or (sensor_type == "Kinectv1") or (sensor_type == "Kinect_v1"):
             print "Loading "+sensor_name+" of type Kinect1"
@@ -35,7 +37,7 @@ class TrackingVisu(Thread):
         self.sensor_name = sensor_name
         self.kinect.wait_until_ready()
         
-        self.list_robot_links = ['link_1','link_2','link_3','link_4','link_5','link_6','link_7']
+        self.list_robot_links = ['link_0','link_1','link_2','link_3','link_4','link_5','link_6','link_7']
         
         rospy.Subscriber("/ar_pose_marker", AlvarMarkers , self.callback)
 
@@ -55,12 +57,11 @@ class TrackingVisu(Thread):
             
             depth_color = cv2.cvtColor(depth_8u ,cv2.COLOR_GRAY2RGB)            
               
-             
             lst_pixels = [None] * len(self.list_robot_links)
             for i in range(len(self.list_robot_links)):
                 try:
                     (trans,_) = listener.lookupTransform(self.kinect.rgb_optical_frame,self.list_robot_links[i], rospy.Time(0))
-                    pixels = self.kinect.world_to_depth(trans,use_distortion=True)
+                    pixels = self.kinect.world_to_depth(trans,use_distortion=False)
                     if (pixels[0]<0) or (pixels[1]<0) or (pixels[0]>img_width) or (pixels[1]>img_height):
                         continue
                     cv2.circle(depth_color,(int(pixels[0]),int(pixels[1])),5,(0,255,0),-1)
@@ -74,7 +75,8 @@ class TrackingVisu(Thread):
                     cv2.line(depth_color, (int((lst_pixels[i])[0]) ,int((lst_pixels[i])[1])), (int((lst_pixels[i+1])[0]) ,int((lst_pixels[i+1])[1])), (255,0,0))
             
             cv2.imshow("DETPH_PLUS_PTS", depth_color)
-            cv2.waitKey(10)
+            cv2.waitKey(10)           
+
 
     def callback(self,data):
         return
@@ -88,9 +90,10 @@ def main(argv):
        
     sensor_name = rospy.get_param('~sensor_name')
     sensor_type = rospy.get_param('~sensor_type')
+    serial = rospy.get_param('~serial')
     
-    gui = TrackingVisu(sensor_type, sensor_name)
-    gui.start()
+    visu = TrackingVisu(sensor_name, sensor_type, serial)
+    visu.start()
     rospy.spin()
 
 if __name__ == '__main__':
