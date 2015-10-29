@@ -14,7 +14,8 @@ import sys
 import numpy as np
 from threading import Thread
 from scipy import stats
-from ar_track_alvar_msgs.msg import AlvarMarkers
+from visualization_msgs.msg import MarkerArray
+from geometry_msgs.msg import PointStamped
 
 class TrackingVisu(Thread):
     def __init__(self, sensor_name, sensor_type, serial):
@@ -36,15 +37,16 @@ class TrackingVisu(Thread):
         
         self.sensor_name = sensor_name
         self.kinect.wait_until_ready()
+        self.listener = tf.TransformListener()
         
         self.list_robot_links = ['link_0','link_1','link_2','link_3','link_4','link_5','link_6','link_7']
         
-        rospy.Subscriber("/ar_pose_marker", AlvarMarkers , self.callback)
+        self.last_pose = None
+        
+        rospy.Subscriber("/kinect_merge/tracking_state", MarkerArray , self.callback)
 
     def start(self):
-        
-        listener = tf.TransformListener()        
-        
+                
         while not rospy.is_shutdown():
             depth_img = self.kinect.get_depth(blocking=False)
             img_height, img_width = depth_img.shape[:2]
@@ -60,10 +62,12 @@ class TrackingVisu(Thread):
             lst_pixels = [None] * len(self.list_robot_links)
             for i in range(len(self.list_robot_links)):
                 try:
-                    (trans,_) = listener.lookupTransform(self.kinect.rgb_optical_frame,self.list_robot_links[i], rospy.Time(0))
+                    (trans,_) = self.listener.lookupTransform(self.kinect.rgb_optical_frame,self.list_robot_links[i], rospy.Time(0))
                     pixels = self.kinect.world_to_depth(trans,use_distortion=False)
-                    if (pixels[0]<0) or (pixels[1]<0) or (pixels[0]>img_width) or (pixels[1]>img_height):
-                        continue
+#==============================================================================
+#                     if (pixels[0]<0) or (pixels[1]<0) or (pixels[0]>img_width) or (pixels[1]>img_height):
+#                         continue
+#==============================================================================
                     cv2.circle(depth_color,(int(pixels[0]),int(pixels[1])),5,(0,255,0),-1)
                     lst_pixels[i] = pixels
                     
@@ -74,11 +78,28 @@ class TrackingVisu(Thread):
                 if (lst_pixels[i] is not None) and (lst_pixels[i+1] is not None):
                     cv2.line(depth_color, (int((lst_pixels[i])[0]) ,int((lst_pixels[i])[1])), (int((lst_pixels[i+1])[0]) ,int((lst_pixels[i+1])[1])), (255,0,0))
             
-            cv2.imshow("DETPH_PLUS_PTS", depth_color)
+            if (lst_pixels[len(self.list_robot_links)-1] is not None) and (self.last_pose is not None):
+                cv2.circle(depth_color,(int(self.last_pose[0]),int(self.last_pose[1])),5,(0,0,255),-1)
+                cv2.line(depth_color, (int((lst_pixels[len(self.list_robot_links)-1])[0]) ,int((lst_pixels[len(self.list_robot_links)-1])[1])), (int(self.last_pose[0]) ,int(self.last_pose[1])), (0,0,255))
+            
+            cv2.imshow("TRACKING", depth_color)
             cv2.waitKey(10)           
-
+            
 
     def callback(self,data):
+
+        pt = PointStamped()
+        pt.header.frame_id = data.markers[0].header.frame_id
+        pt.header.stamp = rospy.get_rostime()
+        pt.point = data.markers[0].pose.position
+        
+        try:
+            pt = self.listener.transformPoint(self.kinect.rgb_optical_frame, pt)
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            return       
+        
+        self.last_pose = self.kinect.world_to_depth((pt.point.x, pt.point.y, pt.point.z),use_distortion=False)
+        
         return
                         
 def main(argv):
