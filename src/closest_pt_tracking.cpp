@@ -63,8 +63,9 @@ int main(int argc, char** argv){
   // Ros Subscribers and Publishers
   pc_clustered_pub_ = nh.advertise<PointCloudSM>(clusters_topic_name, 1);
   cluster_pc_pub_ = nh.advertise<PointCloudSM>(out_topic_name, 1);
-  cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_tracking_pt",1);
+  cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_pt",1);
   cluster_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/tracking_state",1);
+  track_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/closest_pt_tracking",1);
   dist_vect_pub_ = nh.advertise<geometry_msgs::Vector3>("sk_closest/vector_closest_frame",1);
   min_pub_ = nh.advertise<std_msgs::Float32>("minimum_distance",1);
   vel_pub_ = nh.advertise<geometry_msgs::Twist>("velocity",1);
@@ -209,6 +210,13 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     dist_vect.z = end_eff_transform.getOrigin().getZ() - est(2);
     dist_vect_pub_.publish(dist_vect);
     
+    geometry_msgs::PointStamped closest_pt;
+    closest_pt.header.frame_id = kinects_pc_->header.frame_id;
+    closest_pt.point.x = est(0);
+    closest_pt.point.y = est(1);
+    closest_pt.point.z = est(2);
+    track_pt_pub_.publish(closest_pt);
+    
   }
 }
 
@@ -223,7 +231,7 @@ void visualize_state (Eigen::Matrix<float, 9, 1> state, ros::Publisher state_pub
   tf::Quaternion quat;
   
   // Marker for velocity on x
-  velx_marker.header.frame_id = "world";
+  velx_marker.header.frame_id = kinects_pc_->header.frame_id;
   velx_marker.header.stamp = ros::Time::now();
   velx_marker.id = 200;
   velx_marker.ns = "velx";
