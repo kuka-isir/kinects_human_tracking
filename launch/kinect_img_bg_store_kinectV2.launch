@@ -1,0 +1,10 @@
+<launch>
+  <arg name="kinect_name" default="camera"/>
+  <arg name="img_topic" default="$(arg kinect_name)/sd/image_depth_rect"/>
+  <arg name="bg_frames" default="200"/>
+  
+  <node name="$(arg kinect_name)_img_bg_store" pkg="kinects_human_tracking" type="kinect_img_bg_store" output="screen">
+    <param name="img_topic" value="$(arg img_topic)" />
+    <param name="bg_frames" value="$(arg bg_frames)" />
+  </node>
+</launch>
