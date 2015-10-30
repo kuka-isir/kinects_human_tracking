@@ -27,7 +27,7 @@ class TrackingVisu(Thread):
             self.kinect_type = "Kinect2"
             print "Loading Kinect2 with serial : "+serial 
             self.kinect = Kinect_v2(sensor_name,serial,queue_size=10,compression=False,use_rect=True,use_ir=True)
-            return
+            
         elif (sensor_type == "Kinect") or (sensor_type == "Kinect1") or (sensor_type == "Kinectv1") or (sensor_type == "Kinect_v1"):
             print "Loading "+sensor_name+" of type Kinect1"
             self.kinect = Kinect(sensor_name,queue_size=10,compression=False,use_rect=True,use_depth_registered=True,use_ir=False)
@@ -36,12 +36,15 @@ class TrackingVisu(Thread):
             return       
         
         self.sensor_name = sensor_name
+
         self.kinect.wait_until_ready()
+        
         self.listener = tf.TransformListener()
         
         self.list_robot_links = ['link_0','link_1','link_2','link_3','link_4','link_5','link_6','link_7']
         
         self.last_pose = None
+        rospy.sleep(5.0)
         
         rospy.Subscriber("/kinect_merge/tracking_state", MarkerArray , self.callback)
 
@@ -63,11 +66,11 @@ class TrackingVisu(Thread):
             for i in range(len(self.list_robot_links)):
                 try:
                     (trans,_) = self.listener.lookupTransform(self.kinect.rgb_optical_frame,self.list_robot_links[i], rospy.Time(0))
-                    pixels = self.kinect.world_to_depth(trans,use_distortion=False)
-#==============================================================================
-#                     if (pixels[0]<0) or (pixels[1]<0) or (pixels[0]>img_width) or (pixels[1]>img_height):
-#                         continue
-#==============================================================================
+                    if (self.kinect_type == "Kinect2"):
+                        pixels = self.kinect.world_to_depth(trans)
+                    else:
+                        pixels = self.kinect.world_to_depth(trans, use_distortion=False)
+                        
                     cv2.circle(depth_color,(int(pixels[0]),int(pixels[1])),5,(0,255,0),-1)
                     lst_pixels[i] = pixels
                     
@@ -87,19 +90,22 @@ class TrackingVisu(Thread):
             
 
     def callback(self,data):
-
+        
         pt = PointStamped()
         pt.header.frame_id = data.markers[0].header.frame_id
         pt.header.stamp = rospy.get_rostime()
         pt.point = data.markers[0].pose.position
         
         try:
+            self.listener.waitForTransform(self.kinect.rgb_optical_frame,pt.header.frame_id, rospy.get_rostime(), rospy.Duration(4.0))
             pt = self.listener.transformPoint(self.kinect.rgb_optical_frame, pt)
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return       
-        
-        self.last_pose = self.kinect.world_to_depth((pt.point.x, pt.point.y, pt.point.z),use_distortion=False)
-        
+        if (self.kinect_type == "Kinect2"):
+            self.last_pose = self.kinect.world_to_depth((pt.point.x, pt.point.y, pt.point.z))
+        else:
+            self.last_pose = self.kinect.world_to_depth((pt.point.x, pt.point.y, pt.point.z),use_distortion=False)
+            
         return
                         
 def main(argv):

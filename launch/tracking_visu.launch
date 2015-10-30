@@ -1,12 +1,14 @@
 <launch>
-  <arg name="sensor_name" default="camera"/>
+  
+	<arg name="sensor_name" default="camera"/>
   <arg name="sensor_type" default="Kinect1"/>
+  <arg name="serial" default="501427243142"/>  <!-- Only necessary for Kinectv2 type -->
   <arg name="img_topic" default="$(arg sensor_name)/depth_registered/filtered"/>
   
   <node name="$(arg sensor_name)_tracking_visu" pkg="kinects_human_tracking" type="tracking_visu.py" output="screen">
-	<param name="sensor_name" value="$(arg sensor_name)" />
-	<param name="sensor_type" value="$(arg sensor_type)" />
+		<param name="sensor_name" value="$(arg sensor_name)" />
+		<param name="sensor_type" value="$(arg sensor_type)" />
+		<param name="serial" value="$(arg serial)" type="str" /> 
   </node>
-  
   
 </launch>
