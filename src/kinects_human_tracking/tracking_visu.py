@@ -44,12 +44,13 @@ class TrackingVisu(Thread):
         self.list_robot_links = ['link_0','link_1','link_2','link_3','link_4','link_5','link_6','link_7']
         
         self.last_pose = None
-        rospy.sleep(5.0)
         
         rospy.Subscriber("/kinect_merge/tracking_state", MarkerArray , self.callback)
 
     def start(self):
-                
+        
+        cv2.namedWindow("TRACKING, "+self.sensor_name, cv2.WINDOW_NORMAL)        
+        
         while not rospy.is_shutdown():
             depth_img = self.kinect.get_depth(blocking=False)
             img_height, img_width = depth_img.shape[:2]
@@ -79,13 +80,13 @@ class TrackingVisu(Thread):
                 
             for i in range(len(self.list_robot_links)-1):
                 if (lst_pixels[i] is not None) and (lst_pixels[i+1] is not None):
-                    cv2.line(depth_color, (int((lst_pixels[i])[0]) ,int((lst_pixels[i])[1])), (int((lst_pixels[i+1])[0]) ,int((lst_pixels[i+1])[1])), (255,0,0))
+                    cv2.line(depth_color, (int((lst_pixels[i])[0]) ,int((lst_pixels[i])[1])), (int((lst_pixels[i+1])[0]) ,int((lst_pixels[i+1])[1])), (255,0,0), 2)
             
             if (lst_pixels[len(self.list_robot_links)-1] is not None) and (self.last_pose is not None):
                 cv2.circle(depth_color,(int(self.last_pose[0]),int(self.last_pose[1])),5,(0,0,255),-1)
-                cv2.line(depth_color, (int((lst_pixels[len(self.list_robot_links)-1])[0]) ,int((lst_pixels[len(self.list_robot_links)-1])[1])), (int(self.last_pose[0]) ,int(self.last_pose[1])), (0,0,255))
+                cv2.line(depth_color, (int((lst_pixels[len(self.list_robot_links)-1])[0]) ,int((lst_pixels[len(self.list_robot_links)-1])[1])), (int(self.last_pose[0]) ,int(self.last_pose[1])), (0,0,255), 2)
             
-            cv2.imshow("TRACKING", depth_color)
+            cv2.imshow("TRACKING, "+self.sensor_name, depth_color)
             cv2.waitKey(10)           
             
 
