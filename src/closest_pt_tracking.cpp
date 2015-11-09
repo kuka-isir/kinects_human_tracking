@@ -201,8 +201,14 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     
     // Publish vector between point and end-effector
     tf::StampedTransform end_eff_transform;
-    tf_listener_->waitForTransform(kinects_pc_->header.frame_id, enf_eff_frame_, ros::Time(0.0), ros::Duration(1.0));
-    tf_listener_->lookupTransform(kinects_pc_->header.frame_id, enf_eff_frame_, ros::Time(0.0), end_eff_transform);
+    try{
+      tf_listener_->waitForTransform(kinects_pc_->header.frame_id, enf_eff_frame_, ros::Time(0.0), ros::Duration(1.0));
+      tf_listener_->lookupTransform(kinects_pc_->header.frame_id, enf_eff_frame_, ros::Time(0.0), end_eff_transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return;
+    }
     
     geometry_msgs::Vector3 dist_vect;
     dist_vect.x = end_eff_transform.getOrigin().getX() - est(0);
