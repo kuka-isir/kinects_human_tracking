@@ -13,6 +13,9 @@ public:
     nh_priv.getParam("topic_out", topic_out); 
     
     service_name = kinect_name+"_img_bg_store/get_background";
+    ROS_INFO_STREAM("Waiting for service "<<service_name);
+    ros::service::waitForService(service_name);
+    ROS_INFO_STREAM("Service found");
     
     img_sub_ = nh.subscribe<sensor_msgs::Image>(topic_in, 1, &BackgroundImageSubtract::callback, this);
     img_pub_ = nh.advertise<sensor_msgs::Image>(topic_out, 1);
