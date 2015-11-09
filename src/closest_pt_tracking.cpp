@@ -66,9 +66,9 @@ int main(int argc, char** argv){
   cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_pt",1);
   cluster_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/tracking_state",1);
   track_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/closest_pt_tracking",1);
-  dist_vect_pub_ = nh.advertise<geometry_msgs::Vector3>("sk_closest/vector_closest_frame",1);
-  min_pub_ = nh.advertise<std_msgs::Float32>("minimum_distance",1);
-  vel_pub_ = nh.advertise<geometry_msgs::Twist>("velocity",1);
+  dist_vect_pub_ = nh.advertise<geometry_msgs::Vector3>(kinect_topic_name+"/vector_closest_frame",1);
+  min_pub_ = nh.advertise<std_msgs::Float32>(kinect_topic_name+"/minimum_distance",1);
+  vel_pub_ = nh.advertise<geometry_msgs::Twist>(kinect_topic_name+"/closest_vel_tracking",1);
   ros::Subscriber kinect_pc_sub = nh.subscribe<PCMsg>(kinect_topic_name, 1, callback);
   
   // Initialize Kalman filter
