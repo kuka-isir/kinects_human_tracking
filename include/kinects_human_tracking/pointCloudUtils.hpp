@@ -326,8 +326,13 @@ template<typename PointT>
 void pc_to_frame_min_dist(boost::shared_ptr<pcl::PointCloud<PointT> > pc, tf::TransformListener* tf_listener, std::string frame_id, double& min_dist, geometry_msgs::PointStamped& pc_pt_min){
   
   tf::StampedTransform transform;
-  tf_listener->waitForTransform(pc->header.frame_id, frame_id, ros::Time(0.0), ros::Duration(1.0));
-  tf_listener->lookupTransform(pc->header.frame_id, frame_id, ros::Time(0.0), transform);
+  try{
+    tf_listener->waitForTransform(pc->header.frame_id, frame_id, ros::Time(0.0), ros::Duration(1.0));
+    tf_listener->lookupTransform(pc->header.frame_id, frame_id, ros::Time(0.0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
   
   pc_to_frame_min_dist<PointT>(pc, transform, min_dist, pc_pt_min);
     
@@ -398,8 +403,13 @@ void get_closest_cluster_to_frame(boost::shared_ptr<pcl::PointCloud<PointT> > pc
     return;
   
   tf::StampedTransform transform;
-  tf_listener->waitForTransform(pc_in->header.frame_id, frame_id, ros::Time(0.0), ros::Duration(1.0));
-  tf_listener->lookupTransform(pc_in->header.frame_id, frame_id, ros::Time(0.0), transform);
+  try{
+    tf_listener->waitForTransform(pc_in->header.frame_id, frame_id, ros::Time(0.0), ros::Duration(1.0));
+    tf_listener->lookupTransform(pc_in->header.frame_id, frame_id, ros::Time(0.0), transform);
+  }
+  catch (tf::TransformException ex){
+    ROS_ERROR("%s",ex.what());
+  }
   
   get_closest_cluster_to_frame(pc_in, cluster_indices, transform, pc_out, min_dist, pc_pt_min);
   
