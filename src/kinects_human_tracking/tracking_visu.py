@@ -29,6 +29,7 @@ class TrackingVisu(Thread):
             self.kinect = Kinect_v2(sensor_name,serial,queue_size=10,compression=False,use_rect=True,use_ir=True)
             
         elif (sensor_type == "Kinect") or (sensor_type == "Kinect1") or (sensor_type == "Kinectv1") or (sensor_type == "Kinect_v1"):
+            self.kinect_type = "Kinect1"
             print "Loading "+sensor_name+" of type Kinect1"
             self.kinect = Kinect(sensor_name,queue_size=10,compression=False,use_rect=True,use_depth_registered=True,use_ir=False)
         else:
