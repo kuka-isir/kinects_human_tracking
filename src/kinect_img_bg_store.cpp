@@ -11,9 +11,9 @@ public:
     string img_topic;
     nh_priv.getParam("img_topic", img_topic);
     nh_priv.getParam("bg_frames", bg_frames_);
+    this->nh_priv_ = nh_priv;
     
     img_sub_ = nh.subscribe<sensor_msgs::Image>(img_topic, 1, &BackgroundImageStore::callback, this);
-    service_ = nh_priv.advertiseService("get_background", &BackgroundImageStore::get_background, this);
     
   }
   
@@ -28,6 +28,7 @@ protected:
   ros::ServiceServer service_;
   size_t n_frames_;
   sensor_msgs::Image img_in_, img_min_;
+  ros::NodeHandle nh_priv_;
   int bg_frames_;
   bool bg_generated_;
 };
@@ -38,6 +39,7 @@ void BackgroundImageStore::callback(const sensor_msgs::Image::ConstPtr& msg)
     
     if (!bg_generated_){
       ROS_INFO("Done loading the background. Publishing...");
+      service_ = nh_priv_.advertiseService("get_background", &BackgroundImageStore::get_background, this);
       gen_bg();
     }
     
