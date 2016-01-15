@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="serial" default="501427243142" />
+
+  <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
+    <arg name="publish_tf" value="true" />
+    <arg name="base_name" value="kinectV2" />
+    <arg name="sensor" value="$(arg serial)" />
+  </include> 
+
+</launch>
