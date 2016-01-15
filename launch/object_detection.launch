@@ -1,0 +1,24 @@
+<launch>
+
+  <arg name="kinect_topic_name" default="/kinect3/depth_registered/filtered_points"/>
+  <arg name="clusters_topic_name" default="/object_detection/clusters" />
+  <arg name="out_topic_name" default="/object_detection/out_cloud" />
+  <arg name="downsampling" default="true" />
+  <arg name="voxel_size" default="0.005" />
+  <arg name="min_cluster_size" default="30" />
+  <arg name="clustering_tolerance" default="0.01" />  <!-- 2*voxel_size -->
+  <arg name="minimum_height" default="0" />
+
+  <node name="object_detection_kinect3" pkg="kinects_human_tracking" type="object_detection" output="screen">
+    <param name="kinect_topic_name" value="$(arg kinect_topic_name)" />
+    <param name="clusters_topic_name" value="$(arg clusters_topic_name)" />
+    <param name="out_topic_name" value="$(arg out_topic_name)" />
+    <param name="downsampling" value="$(arg downsampling)" />
+    <param name="voxel_size" value="$(arg voxel_size)" />
+    <param name="min_cluster_size" value="$(arg min_cluster_size)" />
+    <param name="clustering_tolerance" value="$(arg clustering_tolerance)" />
+    <param name="minimum_height" value="$(arg minimum_height)" />
+    <rosparam param="clipping_rules">[z, GT, 0.0, z, LT, 0.3, y, GT, -0.3, y, LT, 0.6, x, GT, 0.1, x, LT, 1.5]</rosparam>
+  </node>
+
+</launch>
