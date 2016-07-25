@@ -1,6 +1,7 @@
 <launch>
 
   <arg name="kinect_name" default="camera" />  
+  <arg name="voxel_size" default="0.11" />  
 
   <!-- Nodelet manager for this pipeline --> 
   <node pkg="nodelet" type="nodelet" args="manager"
@@ -24,7 +25,7 @@
     <rosparam param="filter_limit_min">0.5</rosparam>
     <rosparam param="filter_limit_max">4.0</rosparam>
     <rosparam param="filter_limit_negative">False</rosparam>
-    <rosparam param="leaf_size">0.03</rosparam>
+    <rosparam param="leaf_size">$(arg voxel_size)</rosparam>
   </node>
 
 </launch>

@@ -8,6 +8,7 @@
 	<arg name="num_worker_threads" 		default="3" />
 	<arg name="rgb_camera_info_url" 	default="file://$(find depth_cam_extrinsics_calib)/camera_info/rgb_$(arg device_serial).yaml" />
 	<arg name="depth_camera_info_url" 	default="file://$(find depth_cam_extrinsics_calib)/camera_info/depth_$(arg device_serial).yaml" />
+	<arg name="extra_processing"	 	default="false" />
 
 	<rosparam command="load" ns="/$(arg camera)/driver" file="$(find kinects_human_tracking)/config/$(arg camera)_depth_offsets.yaml" />
 
@@ -20,10 +21,10 @@
 		<arg name="depth_camera_info_url" value="$(arg depth_camera_info_url)" />
 		<arg name="publish_tf" value="$(arg publish_tf)" />
 		<arg name="num_worker_threads" value="$(arg num_worker_threads)" />
-		<arg name="disparity_processing" value="false"/>
-		<arg name="disparity_registered_processing" value="false" />
-		<arg name="hw_registered_processing" value="false" />
-		<arg name="sw_registered_processing" value="false" />
+		<arg name="disparity_processing" value="$(arg extra_processing)"/>
+		<arg name="disparity_registered_processing" value="$(arg extra_processing)" />
+		<arg name="hw_registered_processing" value="$(arg extra_processing)" />
+		<arg name="sw_registered_processing" value="$(arg extra_processing)" />
 	</include>
 
 </launch>

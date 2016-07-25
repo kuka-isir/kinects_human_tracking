@@ -10,7 +10,7 @@
 	<arg name="depth_camera_info_url" 	default="file://$(find depth_cam_extrinsics_calib)/camera_info/depth_$(arg device_serial).yaml" />
 	<arg name="extra_processing" 		default="false" />
 
-	<!--rosparam command="load" ns="/$(arg camera)/driver" file="$(find kinects_human_tracking)/config/$(arg camera)_depth_offsets.yaml" /--> 
+	<rosparam command="load" ns="/$(arg camera)/driver" file="$(find kinects_human_tracking)/config/$(arg camera)_depth_offsets.yaml" /> 
 
 	<!-- Openni Launch -->
 	<include file="$(find openni_launch)/launch/openni.launch">
