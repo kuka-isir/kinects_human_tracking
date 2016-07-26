@@ -1,4 +1,3 @@
 <launch>
-   <!--node pkg="tf" type="static_transform_publisher" name="calib_kinectV2" args="1.01497111403 0.899231491516 1.04429816759 0.139683939261 0.841129489587 -0.515312155163 -0.0862726005254 /base_link /kinectV2_link 100" /-->
-   <node pkg="tf" type="static_transform_publisher" name="calib_kinectV2" args="0.96497111403 0.899231491516 1.04429816759 0.139683939261 0.841129489587 -0.515312155163 -0.0862726005254 /base_link /kinectV2_link 100" />
+   <node pkg="tf" type="static_transform_publisher" name="calib_kinectV2" args="0.913252090493 0.992467237109 1.01516410555 0.094085616163 0.837727042249 -0.533701061768 -0.067264226625 /base_link /kinectV2_link 100" />
 </launch>
