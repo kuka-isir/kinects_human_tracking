@@ -223,6 +223,19 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     closest_pt.point.z = est(2);
     track_pt_pub_.publish(closest_pt);
     
+  }else{
+    // Publish the human far away if not found
+    geometry_msgs::Vector3 dist_vect;
+    dist_vect.x = 100;
+    dist_vect.y = 100;
+    dist_vect.z = 100;
+    dist_vect_pub_.publish(dist_vect);
+    geometry_msgs::PointStamped closest_pt;
+    closest_pt.header.frame_id = kinects_pc_->header.frame_id;
+    closest_pt.point.x = 100;
+    closest_pt.point.y = 100;
+    closest_pt.point.z = 100;
+    track_pt_pub_.publish(closest_pt);
   }
 }
 
