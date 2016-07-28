@@ -46,20 +46,23 @@ protected:
 
 void BackgroundImageSubtract::callback(const sensor_msgs::Image::ConstPtr& msg){
     
-  in_cv_image = cv_bridge::toCvCopy(msg);
-  min_image = cv_bridge::toCvCopy(*img_min_, "32FC1");
+  in_cv_image_ = cv_bridge::toCvCopy(msg, "32FC1");
+  min_image_ = cv_bridge::toCvCopy(*img_min_, "32FC1");
 
-  cv::Mat out_img = in_cv_image->image.clone();
+  cv::Mat out_img = in_cv_image_->image.clone();
   
   for(int j=0; j<out_img.rows; j++){
     for(int i=0; i<out_img.cols;i++){
-      float pix_in = float(in_cv_image->image.at<float>(cv::Point(i,j)));
-      float pix_min = float(min_image->image.at<float>(cv::Point(i,j))/1000.0);
+      float pix_in = float(in_cv_image_->image.at<float>(cv::Point(i,j)));
+      float pix_min = float(min_image_->image.at<float>(cv::Point(i,j)));
       if ((pix_min != 0) && (pix_in >= pix_min))
 	out_img.at<float>(cv::Point(i,j))=0.0;     
     }
   }
-
+  
+  if (msg->encoding == sensor_msgs::image_encodings::TYPE_16UC1)
+    out_img.convertTo(out_img, CV_16UC1);
+  
   int morph_elem = 0;
   int morph_size = 2;
   int morph_operator = 0;
@@ -67,10 +70,9 @@ void BackgroundImageSubtract::callback(const sensor_msgs::Image::ConstPtr& msg){
   cv::morphologyEx(out_img, out_img, morph_operator, element);
   
   cv_bridge::CvImage out_ros_img;
-  out_ros_img.encoding = in_cv_image->encoding;
-  out_ros_img.header = in_cv_image->header;
+  out_ros_img.encoding = msg->encoding;
+  out_ros_img.header = msg->header;
   out_ros_img.image = out_img;
-  out_ros_img.toImageMsg();
   img_pub_.publish(*out_ros_img.toImageMsg());
   
 }
