@@ -40,7 +40,7 @@ protected:
   ros::Subscriber img_sub_;
   ros::Publisher img_pub_;
   ros::ServiceClient client_;
-  cv_bridge::CvImage::Ptr in_cv_image, min_image;
+  cv_bridge::CvImage::Ptr in_cv_image_, min_image_;
   
 };
 
