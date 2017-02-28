@@ -138,7 +138,7 @@ This node will just transform the pointClouds into the `out_frame` and then sum 
 #### Tracking of the closest cluster
 ![tracking](https://googledrive.com/host/0B61-Kf77E1hUZnhOcUxMTnFtYzg)
 ```
-roslaunch kinects_human_tracking kinect_human_tracking.launch
+roslaunch kinects_human_tracking closest_pt_tracking.launch
 ```
 ###### Arguments
 - *kinect_topic_name* (string, default: kinect_merge) 
@@ -207,5 +207,3 @@ Here is what happens in the pointCloud processing:
 - Feed the Kalman filter with the observation and get the resulting estimate of the closest point's position and velocity
 
 > Author : Jimmy Da Silva, jimmy.dasilva AT isir.upmc.fr
-
-> Contributor : Shray Bansal, shray.bansal AT gmail.com 
