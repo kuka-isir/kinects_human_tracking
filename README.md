@@ -52,8 +52,8 @@ roslaunch kinects_human_tracking kinect_img_bg_store.launch kinect_name:=kinect1
 roslaunch kinects_human_tracking kinect_img_bg_store.launch kinect_name:=kinect2
 roslaunch kinects_human_tracking kinect_img_bg_sub.launch kinect_name:=kinect1
 roslaunch kinects_human_tracking kinect_img_bg_sub.launch kinect_name:=kinect2
-roslaunch realtime_urdf_filte create_pc.launch kinect_name:=kinect1
-roslaunch realtime_urdf_filte create_pc.launch kinect_name:=kinect2
+roslaunch realtime_urdf_filter create_pc.launch kinect_name:=kinect1
+roslaunch realtime_urdf_filter create_pc.launch kinect_name:=kinect2
 roslaunch kinects_human_tracking kinect_merge.launch topic_name1:=/kinect1/depth_registered/downsampled_filtered_points topic_name2:=/kinect2/depth_registered/downsampled_filtered_points
 (or roslaunch kinects_human_tracking kinect_merge.launch topic_name1:=/kinect1/depth_registered/downsampled_filtered_points  if using only one kinect)
 roslaunch kinects_human_tracking closest_pt_tracking.launch
