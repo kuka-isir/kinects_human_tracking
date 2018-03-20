@@ -38,6 +38,7 @@ https://www.youtube.com/watch?v=kc1JB106Xrc
 - You probably can't run more than 2 Kinects on the same computer without losing FPS in the end. (I am running 2 with 30FPS!)
 - You will need the realtime_urdf_filter package with a few adjustments: https://github.com/JimmyDaSilva/realtime_urdf_filter.git (Use branch indigo-devel)
 - The realtime URDF filter uses OpenGL, therefore a GPU
+- If you use several kinects on several computers, don't forget to sync the computers clocks through ntp (https://help.ubuntu.com/lts/serverguide/NTP.html)
 
 ## Instructions
 ```
