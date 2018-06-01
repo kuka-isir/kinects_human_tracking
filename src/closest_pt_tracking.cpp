@@ -1,4 +1,12 @@
 #include <kinects_human_tracking/closest_pt_tracking.hpp>
+#include <time.h>
+#include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <stdio.h>
+#include <string.h>
 /**
    Subscribe to a pointCloud and track the closest
    point to the robot's end-effector
@@ -190,9 +198,9 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     visualize_state(est, cluster_state_pub_);  
     
     // Publish minimum distance and speed
-    std_msgs::Float32 float32_msg;
+    /*std_msgs::Float32 float32_msg;
     float32_msg.data = last_min_dist_;
-    min_pub_.publish(std_msgs::Float32(float32_msg));
+    min_pub_.publish(std_msgs::Float32(float32_msg));*/
     geometry_msgs::Twist twist;
     twist.linear.x = est(3);
     twist.linear.y = est(4);
@@ -216,13 +224,43 @@ void callback(const PCMsg::ConstPtr& kinect_pc_msg){
     dist_vect.z = end_eff_transform.getOrigin().getZ() - est(2);
     dist_vect_pub_.publish(dist_vect);
     
+    float Distance = sqrt(dist_vect.x*dist_vect.x + dist_vect.y*dist_vect.y + dist_vect.z*dist_vect.z);
+    std_msgs::Float32 float32_msg;
+    float32_msg.data = Distance;
+    min_pub_.publish(std_msgs::Float32(float32_msg));
     geometry_msgs::PointStamped closest_pt;
     closest_pt.header.frame_id = kinects_pc_->header.frame_id;
     closest_pt.point.x = est(0);
     closest_pt.point.y = est(1);
     closest_pt.point.z = est(2);
     track_pt_pub_.publish(closest_pt);
-    
+    /*******************************************
+    Recording the observe and estimate p and v from KF experiment
+    ********************************************
+    FILE *obs_pos = fopen("obs_pos.txt", "w");
+    FILE *est_pos = fopen("obs_pos.txt", "w");
+    FILE *est_vel = fopen("est_vel.txt", "w");
+    FILE *eff_pos = fopen("eff_pos.txt", "w");
+
+    if(obs_pos == NULL || eff_pos == NULL || est_pos == NULL || est_vel == NULL)
+    {
+        ROS_ERROR("Cannot open the file");
+        return;
+    }
+    else
+        ROS_INFO("file opened");
+
+    double now = ros::Time::now().toSec();
+    ROS_INFO("%f %f %f %f \n",now,obs(0),obs(1),obs(2));
+    fprintf(obs_pos, "%f %f %f %f \n",now,obs(0),obs(1),obs(2));
+    fprintf(est_pos, "%f %f %f %f \n",now,est(0),est(1),est(2));
+    fprintf(est_vel, "%f %f %f %f \n",now,est(3),est(4),est(5));
+    fprintf(eff_pos, "%f %f %f %f \n",now,end_eff_transform.getOrigin().getX(),end_eff_transform.getOrigin().getY(),end_eff_transform.getOrigin().getZ());*/
+    double now = ros::Time::now().toSec();
+    //printf("%f %f %f %f %f %f %f %f %f %f %f %f %f \n",now,obs(0),obs(1),obs(2),est(0),est(1),est(2),est(3),est(4),est(5),end_eff_transform.getOrigin().getX(),end_eff_transform.getOrigin().getY(),end_eff_transform.getOrigin().getZ());
+    //ROS_INFO("%10.3f ",Distance);
+    ROS_INFO("%10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f",est(0),est(1),est(2),est(3),est(4),est(5), Distance);
+    //ROS_INFO("%10.3f %10.3f %10.3f",est(3),est(4),est(5));
   }else{
     // Publish the human far away if not found
     geometry_msgs::Vector3 dist_vect;
