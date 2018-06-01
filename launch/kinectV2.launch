@@ -1,6 +1,6 @@
 <launch>
 
-  <arg name="serial" default="501427243142" />
+  <arg name="serial" default="" />
 
   <include file="$(find kinect2_bridge)/launch/kinect2_bridge.launch">
     <arg name="publish_tf" value="true" />

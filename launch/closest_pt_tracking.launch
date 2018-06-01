@@ -13,6 +13,7 @@
   <arg name="kinect_noise_z" default="5" />
   <arg name="minimum_height" default="0" />
   <arg name="max_tracking_jump" default="0.35" />
+  <arg name="tracking_type"        default="eff/" />
 
   <node name="closest_pt_tracking" pkg="kinects_human_tracking" type="closest_pt_tracking" output="screen">
     <param name="kinect_topic_name" value="$(arg kinect_topic_name)" />
@@ -28,7 +29,8 @@
     <param name="minimum_height" value="$(arg minimum_height)" />
     <param name="max_tracking_jump" value="$(arg max_tracking_jump)" />
     <param name="end_eff_frame" value="$(arg end_eff_frame)" />
-    <rosparam param="clipping_rules">[z, GT, 0.04, y, GT, -4.0, x, GT, -0.5, x, LT, 1.5]</rosparam>
+    <param name="tracking_type"         value="$(arg tracking_type)" />
+    <rosparam param="clipping_rules">[z, GT, 0.04, y, GT, -4.0, x, GT, -2.0, x, LT, 3.0]</rosparam>
   </node>
 
 </launch>
