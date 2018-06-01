@@ -1,7 +1,7 @@
 <launch>
   <arg name="kinect_name" default="camera"/>
-  <!--<arg name="topic_in" default="$(arg kinect_name)/sd/image_depth_rect_filtered"/>-->
-  <arg name="topic_in" default="$(arg kinect_name)/sd/image_depth_rect"/>
+  <arg name="topic_in" default="$(arg kinect_name)/sd/image_depth_rect_filtered"/>
+  <!-- <arg name="topic_in" default="$(arg kinect_name)/sd/image_depth_rect"/>-->
   <arg name="topic_out" default="$(arg kinect_name)/background_sub"/>
 
   <node name="$(arg kinect_name)_img_bg_sub" pkg="kinects_human_tracking" type="kinect_img_bg_sub" output="screen">

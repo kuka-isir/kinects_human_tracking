@@ -1,5 +1,5 @@
 <launch>
-  <arg name="topic_name1" default="kinect1/background_sub"/>
+  <arg name="topic_name1" default="kinectV2_2/depth_registered/filtered_points"/>
   <arg name="topic_name2" default=""/>
   <arg name="topic_name3" default=""/>
   <arg name="topic_name4" default=""/>
@@ -8,7 +8,7 @@
   <arg name="topic_name7" default=""/>
   <arg name="topic_name8" default=""/>
   <arg name="topic_name9" default=""/>
-  <arg name="out_frame" default="world"/>
+  <arg name="out_frame" default="base_link"/>
   <arg name="out_topic_name" default="kinect_merge"/>
 
   <node name="kinects_merge" pkg="kinects_human_tracking" type="merge_kinects_pc" output="screen">
