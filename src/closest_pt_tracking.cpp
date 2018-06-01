@@ -21,7 +21,7 @@ int main(int argc, char** argv){
   tf_listener_ = new tf::TransformListener();
    
   // Get params topics and frames names
-  string kinect_topic_name, clusters_topic_name, out_topic_name;
+    string kinect_topic_name, clusters_topic_name, out_topic_name, tracking_type;
   XmlRpc::XmlRpcValue clipping_rules_bounds;
   bool params_loaded = true;
   params_loaded *= nh_priv.getParam("kinect_topic_name",kinect_topic_name);
@@ -38,6 +38,7 @@ int main(int argc, char** argv){
   params_loaded *= nh_priv.getParam("clustering_tolerance",clustering_tolerance_);
   params_loaded *= nh_priv.getParam("downsampling",downsampling_);
   params_loaded *= nh_priv.getParam("end_eff_frame",enf_eff_frame_);
+    params_loaded *= nh_priv.getParam("tracking_type", tracking_type);
   
   if(!params_loaded){
     ROS_ERROR("Couldn't find all the required parameters. Closing...");
@@ -69,14 +70,15 @@ int main(int argc, char** argv){
   cluster_cloud_->reserve(10000);
   
   // Ros Subscribers and Publishers
-  pc_clustered_pub_ = nh.advertise<PointCloudSM>(clusters_topic_name, 1);
-  cluster_pc_pub_ = nh.advertise<PointCloudSM>(out_topic_name, 1);
-  cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/min_pt",1);
-  cluster_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(kinect_topic_name+"/tracking_state",1);
-  track_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(kinect_topic_name+"/closest_pt_tracking",1);
-  dist_vect_pub_ = nh.advertise<geometry_msgs::Vector3>(kinect_topic_name+"/vector_closest_frame",1);
-  min_pub_ = nh.advertise<std_msgs::Float32>(kinect_topic_name+"/minimum_distance",1);
-  vel_pub_ = nh.advertise<geometry_msgs::Twist>(kinect_topic_name+"/closest_vel_tracking",1);
+    pc_clustered_pub_  = nh.advertise<PointCloudSM>(tracking_type + clusters_topic_name, 1);
+    cluster_pc_pub_    = nh.advertise<PointCloudSM>(tracking_type + out_topic_name, 1);
+    cloud_mini_pt_pub_ = nh.advertise<geometry_msgs::PointStamped>(tracking_type + kinect_topic_name + "/min_pt", 1);
+    cluster_state_pub_ = nh.advertise<visualization_msgs::MarkerArray>(tracking_type + kinect_topic_name + "/tracking_state", 1);
+    track_pt_pub_      = nh.advertise<geometry_msgs::PointStamped>(tracking_type + kinect_topic_name + "/closest_pt_tracking", 1);
+    dist_vect_pub_     = nh.advertise<geometry_msgs::Vector3>(tracking_type+kinect_topic_name + "/vector_closest_frame", 1);
+    min_pub_           = nh.advertise<std_msgs::Float32>(tracking_type+kinect_topic_name + "/minimum_distance", 1);
+    vel_pub_           = nh.advertise<geometry_msgs::Twist>(tracking_type+kinect_topic_name + "/closest_vel_tracking", 1);
+    
   ros::Subscriber kinect_pc_sub = nh.subscribe<PCMsg>(kinect_topic_name, 1, callback);
   
   // Initialize Kalman filter
